@@ -3,25 +3,33 @@
 from dotenv import load_dotenv
 load_dotenv(dotenv_path='./.env', verbose=True)
 
-from pprint import pprint
 import twitter
 import unicodecsv as csv
 import re
 import os
+import gspread
+from oauth2client.service_account import ServiceAccountCredentials
 
-def get_party(description):
-    party = "MP"
-    if re.search("labour", description, re.IGNORECASE):
-        party = "Labour"
-    elif re.search("green", description, re.IGNORECASE):
-        party = "Green"
-    elif re.search("national", description, re.IGNORECASE):
-        party = "National"
-    elif re.search("new zealand first|nz first|nz_first", description, re.IGNORECASE):
-        party = "New Zealand First"
-    elif re.search("act", description, re.IGNORECASE):
-        party = "ACT"
-    return party
+# print "Connecting to Google Sheet…"
+# scope = ['https://spreadsheets.google.com/feeds',
+#          'https://www.googleapis.com/auth/drive']
+# credentials = ServiceAccountCredentials.from_json_keyfile_name(os.getenv("json_keyfile"), scope)
+# gc = gspread.authorize(credentials)
+# wks = gc.open("MPs' faves network").sheet1
+
+def get_type(description):
+    type = ""
+    if re.search(r"\blabour\b", description, re.IGNORECASE):
+        type = "Labour"
+    elif re.search(r"\bgreen|17 garrett\b", description, re.IGNORECASE):
+        type = "Green"
+    elif re.search(r"\bnational\b", description, re.IGNORECASE):
+        type = "National"
+    elif re.search(r"\bnew zealand first|nz first|nz_first\b", description, re.IGNORECASE):
+        type = "New Zealand First"
+    elif re.search(r"\bact\b", description, re.IGNORECASE):
+        type = "ACT"
+    return type
 
 print "Connecting to Twitter… (pauses to stay under rate limit)"
 api = twitter.Api(consumer_key=os.getenv("consumer_key"),
@@ -32,20 +40,45 @@ api = twitter.Api(consumer_key=os.getenv("consumer_key"),
 
 mps = api.GetListMembers(slug="mps", owner_screen_name="NZParliament")
 
-with open('mps.csv', 'wb') as mps_csvfile:
-    writer = csv.writer(mps_csvfile)
-    writer.writerow(["label", "type", "description", "image"])
+mps_latest_fave_status_ids = {}
+
+if os.path.isfile('faves.csv'):
+    print 'Found existing faves.csv'
+    previous_user = None
+    with open('faves.csv', 'r') as faves_csv:
+        for row in csv.reader(faves_csv):
+            current_user = row[0]
+            if current_user != previous_user:
+                previous_user = current_user
+                mps_latest_fave_status_ids[current_user] = row[2]
+
+faved_screennames = set()
+
+with open('faves.csv', 'a') as faves_csv:
+    writer = csv.writer(faves_csv)
+    if not os.path.isfile('faves.csv'):
+        writer.writerow(["from", "to", "id"])
+
     for mp in mps:
-        row = mp.name, get_party(mp.description), mp.description, mp.profile_image_url
+        since_id = None
+        if mp.name in mps_latest_fave_status_ids:
+            since_id = mps_latest_fave_status_ids[mp.name]
+            print "Recording tweets for", mp.name, "after", since_id
+        favorites = api.GetFavorites(user_id=mp.id, since_id=since_id)
+
+        for favorite in favorites:
+            print mp.name, "❤️ ", favorite.user.name, favorite.id
+            writer.writerow([mp.name, favorite.user.name, favorite.id])
+            faved_screennames.add(favorite.user.screen_name)
+
+with open('people.csv', 'a') as people_csv:
+    writer = csv.writer(people_csv)
+    if not os.path.isfile('people.csv'):
+        writer.writerow(["label", "type", "description", "screen_name", "image"])
+
+    for screen_name in faved_screennames:
+        # TODO: check whether they're in the MPs list, for setting the type more accurately
+        user = api.GetUser(screen_name=screen_name)
+        row = user.name, get_type(user.description), user.description, user.screen_name, user.profile_image_url
         print row
         writer.writerow(row)
-
-with open('faves.csv', 'wb') as csvfile:
-    writer = csv.writer(csvfile)
-    writer.writerow(["from", "to"])
-
-    for mp in mps:
-        favorites = api.GetFavorites(user_id = mp.id)
-        for favorite in favorites:
-            print mp.name, "❤️ ", favorite.user.name
-            writer.writerow([mp.name, favorite.user.name])
