@@ -5,7 +5,6 @@ load_dotenv(dotenv_path='./.env', verbose=True)
 
 from distutils.util import strtobool
 import os
-# import unicodecsv as csv
 from oauth2client.service_account import ServiceAccountCredentials
 import pandas
 import gspread
@@ -17,16 +16,21 @@ scope = ['https://spreadsheets.google.com/feeds',
          'https://www.googleapis.com/auth/drive']
 credentials = ServiceAccountCredentials.from_json_keyfile_name(os.getenv('json_keyfile'), scope)
 gc = gspread.authorize(credentials)
-sheets = gc.open_by_key('1oRsMw3wipn7LHFQlxtpazPoGCpZvM3I0lScUKXCi388')
+sheets = gc.open_by_key(os.getenv('google_sheet_key'))
 
-if strtobool(raw_input('OK to delete & replace test sheet? ')):
+faves = pandas.read_csv('faves.csv')
+
+pivoted = faves.pivot_table(index=['from','to'],aggfunc='count')
+pivoted.reset_index(level=['from', 'to'], inplace=True)
+pivoted.columns = ['from', 'to', 'count']
+
+confirm = raw_input('OK to delete & replace worksheet? (Y/n) ')
+if confirm is '' or strtobool(confirm):
     print "Deleting"
-    try: sheets.del_worksheet(sheets.worksheet('test'))
+    try: sheets.del_worksheet(sheets.worksheet('faves'))
     except: print "Couldn't delete"
 
-    faves = pandas.read_csv('faves.csv')
-
     print "Creating new worksheet"
-    new_worksheet = sheets.add_worksheet(title="test", rows=faves.shape[0], cols=faves.shape[1])
+    new_worksheet = sheets.add_worksheet(title="faves", rows=faves.shape[0], cols=faves.shape[1])
     print "Uploading data"
-    set_with_dataframe(new_worksheet, faves)
+    set_with_dataframe(new_worksheet, pivoted)

@@ -58,7 +58,7 @@ with open('faves.csv', 'a') as faves_csv:
         favorites = api.GetFavorites(user_id=mp.id, since_id=since_id)
 
         for favorite in favorites:
-            print mp.name, '❤️ ', favorite.user.name, favorite.id
+            print mp.name, '❤️ ', favorite.user.name, favorite.created_at
             writer.writerow([mp.name, favorite.user.name, favorite.id])
             faved_screennames.add(favorite.user.screen_name)
 
