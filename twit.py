@@ -7,38 +7,29 @@ import twitter
 import unicodecsv as csv
 import re
 import os
-import gspread
-from oauth2client.service_account import ServiceAccountCredentials
-
-# print "Connecting to Google Sheet…"
-# scope = ['https://spreadsheets.google.com/feeds',
-#          'https://www.googleapis.com/auth/drive']
-# credentials = ServiceAccountCredentials.from_json_keyfile_name(os.getenv("json_keyfile"), scope)
-# gc = gspread.authorize(credentials)
-# wks = gc.open("MPs' faves network").sheet1
 
 def get_type(description):
-    type = ""
-    if re.search(r"\blabour\b", description, re.IGNORECASE):
-        type = "Labour"
-    elif re.search(r"\bgreen|17 garrett\b", description, re.IGNORECASE):
-        type = "Green"
-    elif re.search(r"\bnational\b", description, re.IGNORECASE):
-        type = "National"
-    elif re.search(r"\bnew zealand first|nz first|nz_first\b", description, re.IGNORECASE):
-        type = "New Zealand First"
-    elif re.search(r"\bact\b", description, re.IGNORECASE):
-        type = "ACT"
+    type = ''
+    if re.search(r'\blabour\b', description, re.IGNORECASE):
+        type = 'Labour'
+    elif re.search(r'\bgreen|17 garrett\b', description, re.IGNORECASE):
+        type = 'Green'
+    elif re.search(r'\bnational\b', description, re.IGNORECASE):
+        type = 'National'
+    elif re.search(r'\bnew zealand first|nz first|nz_first\b', description, re.IGNORECASE):
+        type = 'New Zealand First'
+    elif re.search(r'\bact\b', description, re.IGNORECASE):
+        type = 'ACT'
     return type
 
-print "Connecting to Twitter… (pauses to stay under rate limit)"
-api = twitter.Api(consumer_key=os.getenv("consumer_key"),
-                  consumer_secret=os.getenv("consumer_secret"),
-                  access_token_key=os.getenv("access_token_key"),
-                  access_token_secret=os.getenv("access_token_secret"),
+print 'Connecting to Twitter… (pauses to stay under rate limit)'
+api = twitter.Api(consumer_key=os.getenv('consumer_key'),
+                  consumer_secret=os.getenv('consumer_secret'),
+                  access_token_key=os.getenv('access_token_key'),
+                  access_token_secret=os.getenv('access_token_secret'),
                   sleep_on_rate_limit=True)
 
-mps = api.GetListMembers(slug="mps", owner_screen_name="NZParliament")
+mps = api.GetListMembers(slug='mps', owner_screen_name='NZParliament')
 
 mps_latest_fave_status_ids = {}
 
@@ -57,24 +48,24 @@ faved_screennames = set()
 with open('faves.csv', 'a') as faves_csv:
     writer = csv.writer(faves_csv)
     if not os.path.isfile('faves.csv'):
-        writer.writerow(["from", "to", "id"])
+        writer.writerow(['from', 'to', 'id'])
 
     for mp in mps:
         since_id = None
         if mp.name in mps_latest_fave_status_ids:
             since_id = mps_latest_fave_status_ids[mp.name]
-            print "Recording tweets for", mp.name, "after", since_id
+            print 'Looking for tweets for', mp.name, 'after', since_id
         favorites = api.GetFavorites(user_id=mp.id, since_id=since_id)
 
         for favorite in favorites:
-            print mp.name, "❤️ ", favorite.user.name, favorite.id
+            print mp.name, '❤️ ', favorite.user.name, favorite.id
             writer.writerow([mp.name, favorite.user.name, favorite.id])
             faved_screennames.add(favorite.user.screen_name)
 
 with open('people.csv', 'a') as people_csv:
     writer = csv.writer(people_csv)
     if not os.path.isfile('people.csv'):
-        writer.writerow(["label", "type", "description", "screen_name", "image"])
+        writer.writerow(['label', 'type', 'description', 'screen_name', 'image'])
 
     for screen_name in faved_screennames:
         # TODO: check whether they're in the MPs list, for setting the type more accurately
@@ -82,3 +73,5 @@ with open('people.csv', 'a') as people_csv:
         row = user.name, get_type(user.description), user.description, user.screen_name, user.profile_image_url
         print row
         writer.writerow(row)
+
+print "New tweets collected:", len(faved_screennames)
