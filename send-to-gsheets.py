@@ -20,17 +20,24 @@ sheets = gc.open_by_key(os.getenv('google_sheet_key'))
 
 faves = pandas.read_csv('faves.csv')
 
-pivoted = faves.pivot_table(index=['from','to'],aggfunc='count')
-pivoted.reset_index(level=['from', 'to'], inplace=True)
-pivoted.columns = ['from', 'to', 'count']
+faves_pivot = faves.pivot_table(index=['from','to'],aggfunc='count')
+faves_pivot.reset_index(level=['from', 'to'], inplace=True)
+faves_pivot.columns = ['from', 'to', 'count']
 
-confirm = raw_input('OK to delete & replace worksheet? (Y/n) ')
+people = pandas.read_csv('people.csv')
+
+confirm = raw_input('OK to delete & replace worksheets? (Y/n) ')
 if confirm is '' or strtobool(confirm):
     print "Deleting"
-    try: sheets.del_worksheet(sheets.worksheet('faves'))
+    try: # currently needs one useless worksheet hanging about (can't delete all sheets)
+        sheets.del_worksheet(sheets.worksheet('faves'))
+        sheets.del_worksheet(sheets.worksheet('people'))
     except: print "Couldn't delete"
 
-    print "Creating new worksheet"
-    new_worksheet = sheets.add_worksheet(title="faves", rows=faves.shape[0], cols=faves.shape[1])
-    print "Uploading data"
-    set_with_dataframe(new_worksheet, pivoted)
+    print "Creating new worksheets"
+    faves_worksheet = sheets.add_worksheet(title="faves", rows=faves_pivot.shape[0], cols=faves_pivot.shape[1])
+    people_worksheet = sheets.add_worksheet(title="people", rows=people.shape[0], cols=people.shape[1])
+    print "Uploading faves"
+    set_with_dataframe(faves_worksheet, faves_pivot)
+    print "Uploading people"
+    set_with_dataframe(people_worksheet, people)
