@@ -18,13 +18,21 @@ credentials = ServiceAccountCredentials.from_json_keyfile_name(os.getenv('json_k
 gc = gspread.authorize(credentials)
 sheets = gc.open_by_key(os.getenv('google_sheet_key'))
 
+print 'Loading csv'
 faves = pandas.read_csv('faves.csv')
 
-faves_pivot = faves.pivot_table(index=['from','to'],aggfunc='count')
-faves_pivot.reset_index(level=['from', 'to'], inplace=True)
-faves_pivot.columns = ['from', 'to', 'count']
+print 'Adding up multiple tweets favorited by & from the same people'
+faves_added = faves.pivot_table(index=['from','to'], values=['id','text'], aggfunc={'id':'count','text':'last'})
+faves_added.reset_index(level=['from', 'to'], inplace=True)
+faves_added.columns = ['from', 'to', 'faves', 'last_tweet']
+
+print 'Counting number of times each person has been favorited'
+favees = faves.pivot_table(index=['to'], values=['from'], aggfunc='count')
+favees.reset_index(level=['to'], inplace=True)
+favees.columns = ['label','favees']
 
 people = pandas.read_csv('people.csv')
+people = pandas.merge(people, favees, how='right', on=['label', 'label'])
 
 confirm = raw_input('OK to delete & replace worksheets? (Y/n) ')
 if confirm is '' or strtobool(confirm):
@@ -35,9 +43,9 @@ if confirm is '' or strtobool(confirm):
     except: print "Couldn't delete"
 
     print "Creating new worksheets"
-    faves_worksheet = sheets.add_worksheet(title="faves", rows=faves_pivot.shape[0], cols=faves_pivot.shape[1])
+    faves_worksheet = sheets.add_worksheet(title="faves", rows=faves_added.shape[0], cols=faves_added.shape[1])
     people_worksheet = sheets.add_worksheet(title="people", rows=people.shape[0], cols=people.shape[1])
     print "Uploading faves"
-    set_with_dataframe(faves_worksheet, faves_pivot)
+    set_with_dataframe(faves_worksheet, faves_added)
     print "Uploading people"
     set_with_dataframe(people_worksheet, people)

@@ -48,7 +48,7 @@ faved_screennames = set()
 with open('faves.csv', 'a') as faves_csv:
     writer = csv.writer(faves_csv)
     if not os.path.isfile('faves.csv'):
-        writer.writerow(['from', 'to', 'id'])
+        writer.writerow(['from', 'to', 'id', 'text'])
 
     for mp in mps:
         since_id = None
@@ -58,8 +58,8 @@ with open('faves.csv', 'a') as faves_csv:
         favorites = api.GetFavorites(user_id=mp.id, since_id=since_id)
 
         for favorite in favorites:
-            print mp.name, '❤️ ', favorite.user.name, favorite.created_at
-            writer.writerow([mp.name, favorite.user.name, favorite.id])
+            print mp.name, '❤️ ', favorite.user.name, favorite.created_at, favorite.text
+            writer.writerow([mp.name, favorite.user.name, favorite.id, favorite.text])
             faved_screennames.add(favorite.user.screen_name)
 
 with open('people.csv', 'a') as people_csv:
