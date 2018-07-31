@@ -58,7 +58,7 @@ with open('faves.csv', 'a') as faves_csv:
         favorites = api.GetFavorites(user_id=mp.id, since_id=since_id)
 
         for favorite in favorites:
-            print mp.name, '❤️ ', favorite.user.name, favorite.created_at, favorite.text
+            print mp.name, '❤️ ', favorite.user.name, favorite.created_at
             writer.writerow([mp.name, favorite.user.name, favorite.id, favorite.text, mp.screen_name, favorite.user.screen_name])
             faved_screennames.add(favorite.user.screen_name)
 
@@ -69,8 +69,9 @@ with open('people.csv', 'a') as people_csv:
 
     for screen_name in faved_screennames:
         # TODO: check whether they're in the MPs list, for setting the type more accurately
+        # TODO: check whether user is already in people.csv, and skip if so
         user = api.GetUser(screen_name=screen_name)
-        row = user.name, get_type(user.description), user.description, user.screen_name, user.profile_image_url
+        row = user.name, '', user.description, user.screen_name, user.profile_image_url
         print row
         writer.writerow(row)
 

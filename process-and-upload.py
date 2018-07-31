@@ -10,7 +10,6 @@ import pandas
 import gspread
 from gspread_dataframe import set_with_dataframe
 
-
 print 'Connecting to Google Sheet…'
 scope = ['https://spreadsheets.google.com/feeds',
          'https://www.googleapis.com/auth/drive']
@@ -32,7 +31,8 @@ favees.reset_index(level=['to'], inplace=True)
 favees.columns = ['label','favees']
 
 people = pandas.read_csv('people.csv')
-people = pandas.merge(people, favees, how='right', on=['label', 'label'])
+people.drop_duplicates(subset=['label'], inplace=True)
+people = pandas.merge(people, favees, how='outer', on=['label', 'label'])
 
 confirm = raw_input('OK to delete & replace worksheets? (Y/n) ')
 if confirm is '' or strtobool(confirm):
