@@ -34,6 +34,9 @@ people = pandas.read_csv('people.csv')
 people.drop_duplicates(subset=['label'], inplace=True)
 people = pandas.merge(people, favees, how='outer', on=['label', 'label'])
 
+print 'Labeling people with less than 2 favees as singletons'
+people.loc[(people['favees'] < 2) & (people['type'].isnull()), ['type']] = 'singleton'
+
 confirm = raw_input('OK to delete & replace worksheets? (Y/n) ')
 if confirm is '' or strtobool(confirm):
     print "Deleting"

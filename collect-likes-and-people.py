@@ -72,7 +72,6 @@ with open('people.csv', 'a') as people_csv:
         # TODO: check whether user is already in people.csv, and skip if so
         user = api.GetUser(screen_name=screen_name)
         row = user.name, '', user.description, user.screen_name, user.profile_image_url
-        print row
         writer.writerow(row)
 
 print "New tweets collected:", len(faved_screennames)
