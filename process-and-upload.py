@@ -17,8 +17,11 @@ credentials = ServiceAccountCredentials.from_json_keyfile_name(os.getenv('json_k
 gc = gspread.authorize(credentials)
 sheets = gc.open_by_key(os.getenv('google_sheet_key'))
 
-print 'Loading csv'
+print 'Loading faves & retweets'
 faves = pandas.read_csv('faves.csv')
+retweets = pandas.read_csv('retweets.csv')
+
+faves = pandas.concat([faves, retweets])
 
 print 'Adding up multiple tweets favorited by & from the same people'
 faves_added = faves.pivot_table(index=['from','to'], values=['id','text'], aggfunc={'id':'count','text':'last'})

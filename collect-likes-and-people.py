@@ -32,6 +32,7 @@ api = twitter.Api(consumer_key=os.getenv('consumer_key'),
 mps = api.GetListMembers(slug='mps', owner_screen_name='NZParliament')
 
 mps_latest_fave_status_ids = {}
+mps_latest_retweet_status_ids = {}
 
 if os.path.isfile('faves.csv'):
     print 'Found existing faves.csv'
@@ -42,6 +43,16 @@ if os.path.isfile('faves.csv'):
             if current_user != previous_user:
                 previous_user = current_user
                 mps_latest_fave_status_ids[current_user] = row[2]
+
+if os.path.isfile('retweets.csv'):
+    print 'Found existing retweets.csv'
+    previous_user = None
+    with open('retweets.csv', 'r') as retweets_csv:
+        for row in csv.reader(retweets_csv):
+            current_user = row[0]
+            if current_user != previous_user:
+                previous_user = current_user
+                mps_latest_retweet_status_ids[current_user] = row[2]
 
 faved_screennames = set()
 
@@ -62,13 +73,36 @@ with open('faves.csv', 'a') as faves_csv:
             writer.writerow([mp.name, favorite.user.name, favorite.id, favorite.text, mp.screen_name, favorite.user.screen_name])
             faved_screennames.add(favorite.user.screen_name)
 
+with open('retweets.csv', 'a') as retweet_csv:
+    writer = csv.writer(retweet_csv)
+    if not os.path.isfile('retweets.csv'):
+        writer.writerow(['from', 'to', 'id', 'text', 'from_screenname', 'to_screenname'])
+
+    for mp in mps:
+        since_id = None
+        if mp.name in mps_latest_retweet_status_ids:
+            since_id = mps_latest_retweet_status_ids[mp.name]
+            print 'Looking for unquoted retweets by', mp.name, 'after', since_id
+        tweets = api.GetUserTimeline(user_id=mp.id, since_id=since_id, include_rts=True, exclude_replies=True, trim_user=False)
+
+        for tweet in tweets:
+            try:
+                retweet = tweet.retweeted_status
+                if not tweet.quoted_status_id:
+                    print mp.name, 'RT', retweet.user.name, retweet.created_at
+                    writer.writerow([mp.name, retweet.user.name, retweet.id, retweet.text, mp.screen_name, retweet.user.screen_name])
+                    faved_screennames.add(retweet.user.screen_name)
+            except:
+                1
+
+print "Looking & and recording people found"
+
 with open('people.csv', 'a') as people_csv:
     writer = csv.writer(people_csv)
     if not os.path.isfile('people.csv'):
         writer.writerow(['label', 'type', 'description', 'screen_name', 'image'])
 
     for screen_name in faved_screennames:
-        # TODO: check whether they're in the MPs list, for setting the type more accurately
         # TODO: check whether user is already in people.csv, and skip if so
         user = api.GetUser(screen_name=screen_name)
         row = user.name, '', user.description, user.screen_name, user.profile_image_url
