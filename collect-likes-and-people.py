@@ -1,58 +1,48 @@
 # This Python file uses the following encoding: utf-8
 
-from dotenv import load_dotenv
-load_dotenv(dotenv_path='./.env', verbose=True)
-
 import twitter
-import unicodecsv as csv
+# import unicodecsv as csv
 import re
 import os
+import argparse
 
-def get_type(description):
-    type = ''
-    if re.search(r'\blabour\b', description, re.IGNORECASE):
-        type = 'Labour'
-    elif re.search(r'\bgreen|17 garrett\b', description, re.IGNORECASE):
-        type = 'Green'
-    elif re.search(r'\bnational\b', description, re.IGNORECASE):
-        type = 'National'
-    elif re.search(r'\bnew zealand first|nz first|nz_first\b', description, re.IGNORECASE):
-        type = 'New Zealand First'
-    elif re.search(r'\bact\b', description, re.IGNORECASE):
-        type = 'ACT'
-    return type
+import connect_to_twitter
 
-print 'Connecting to Twitter… (pauses to stay under rate limit)'
-api = twitter.Api(consumer_key=os.getenv('consumer_key'),
-                  consumer_secret=os.getenv('consumer_secret'),
-                  access_token_key=os.getenv('access_token_key'),
-                  access_token_secret=os.getenv('access_token_secret'),
-                  sleep_on_rate_limit=True)
+parser = argparse.ArgumentParser(description='Given a Twitter list, collect liked tweets and retweets, and the profiles of the tweeters')
+parser.add_argument('--list', dest='list', help='Slug of the Twitter list', required=True)
+parser.add_argument('--owner', dest='owner_screen_name', help='Screen name of the Twitter list', required=True)
+args = parser.parse_args()
 
-mps = api.GetListMembers(slug='mps', owner_screen_name='NZParliament')
 
-mps_latest_fave_status_ids = {}
-mps_latest_retweet_status_ids = {}
+api = connect_to_twitter.api()
 
-if os.path.isfile('faves.csv'):
-    print 'Found existing faves.csv'
-    previous_user = None
-    with open('faves.csv', 'r') as faves_csv:
-        for row in csv.reader(faves_csv):
-            current_user = row[0]
-            if current_user != previous_user:
-                previous_user = current_user
-                mps_latest_fave_status_ids[current_user] = row[2]
+list_members = api.GetListMembers(slug=args.list, owner_screen_name=args.owner_screen_name)
 
-if os.path.isfile('retweets.csv'):
-    print 'Found existing retweets.csv'
-    previous_user = None
-    with open('retweets.csv', 'r') as retweets_csv:
-        for row in csv.reader(retweets_csv):
-            current_user = row[0]
-            if current_user != previous_user:
-                previous_user = current_user
-                mps_latest_retweet_status_ids[current_user] = row[2]
+exit()
+
+
+# mps_latest_fave_status_ids = {}
+# mps_latest_retweet_status_ids = {}
+#
+# if os.path.isfile('faves.csv'):
+#     print('Found existing faves.csv')
+#     previous_user = None
+#     with open('faves.csv', 'r') as faves_csv:
+#         for row in csv.reader(faves_csv):
+#             current_user = row[0]
+#             if current_user != previous_user:
+#                 previous_user = current_user
+#                 mps_latest_fave_status_ids[current_user] = row[2]
+#
+# if os.path.isfile('retweets.csv'):
+#     print('Found existing retweets.csv')
+#     previous_user = None
+#     with open('retweets.csv', 'r') as retweets_csv:
+#         for row in csv.reader(retweets_csv):
+#             current_user = row[0]
+#             if current_user != previous_user:
+#                 previous_user = current_user
+#                 mps_latest_retweet_status_ids[current_user] = row[2]
 
 faved_screennames = set()
 
@@ -65,11 +55,11 @@ with open('faves.csv', 'a') as faves_csv:
         since_id = None
         if mp.name in mps_latest_fave_status_ids:
             since_id = mps_latest_fave_status_ids[mp.name]
-            print 'Looking for tweets for', mp.name, 'after', since_id
+            print('Looking for tweets for', mp.name, 'after', since_id)
         favorites = api.GetFavorites(user_id=mp.id, since_id=since_id)
 
         for favorite in favorites:
-            print mp.name, '❤️ ', favorite.user.name, favorite.created_at
+            print(mp.name, '❤️ ', favorite.user.name, favorite.created_at)
             writer.writerow([mp.name, favorite.user.name, favorite.id, favorite.text, mp.screen_name, favorite.user.screen_name])
             faved_screennames.add(favorite.user.screen_name)
 
@@ -82,20 +72,20 @@ with open('retweets.csv', 'a') as retweet_csv:
         since_id = None
         if mp.name in mps_latest_retweet_status_ids:
             since_id = mps_latest_retweet_status_ids[mp.name]
-            print 'Looking for unquoted retweets by', mp.name, 'after', since_id
+            print('Looking for unquoted retweets by', mp.name, 'after', since_id)
         tweets = api.GetUserTimeline(user_id=mp.id, since_id=since_id, include_rts=True, exclude_replies=True, trim_user=False)
 
         for tweet in tweets:
             try:
                 retweet = tweet.retweeted_status
                 if not tweet.quoted_status_id:
-                    print mp.name, 'RT', retweet.user.name, retweet.created_at
+                    print(mp.name, 'RT', retweet.user.name, retweet.created_at)
                     writer.writerow([mp.name, retweet.user.name, retweet.id, retweet.text, mp.screen_name, retweet.user.screen_name])
                     faved_screennames.add(retweet.user.screen_name)
             except:
                 1
 
-print "Looking & and recording people found"
+print("Looking & and recording people found")
 
 with open('people.csv', 'a') as people_csv:
     writer = csv.writer(people_csv)
@@ -108,4 +98,4 @@ with open('people.csv', 'a') as people_csv:
         row = user.name, '', user.description, user.screen_name, user.profile_image_url
         writer.writerow(row)
 
-print "New tweets collected:", len(faved_screennames)
+print("New tweets collected:", len(faved_screennames))

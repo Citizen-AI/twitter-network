@@ -1,0 +1,51 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <style>
+body {
+  margin: 0;
+}
+    </style>
+    <!-- <script src="//unpkg.com/three"></script>
+    <script src="//unpkg.com/three-spritetext"></script> -->
+    <script src="//unpkg.com/3d-force-graph"></script>
+  </head>
+  <body>
+
+    <div id="3d-graph"></div>
+
+    <script>
+
+const elem = document.getElementById('3d-graph');
+const Graph = ForceGraph3D()(elem)
+  .jsonUrl('../output/us-congress.json')
+  .nodeAutoColorBy('type')
+  .nodeRelSize(2)
+  .nodeLabel(node => `${node.name}: ${node.description}`)
+  .onNodeHover(node => elem.style.cursor = node ? 'pointer' : null)
+  // .linkVisibility(false)
+  .linkOpacity(0.1)
+
+Graph
+  .d3Force('charge').strength(-250)
+
+Graph
+  .d3Force('link').distance(100)
+
+// https://bl.ocks.org/steveharoz/8c3e2524079a8c440df60c1ab72b5d03
+
+  // .nodeThreeObject(node => {
+  //         const sprite = new SpriteText(node.id);
+  //         sprite.color = node.color;
+  //         sprite.textHeight = 8;
+  //         return sprite;
+  //       })
+  // .linkDirectionalArrowLength(3.5)
+  // .linkDirectionalArrowRelPos(1)
+  // .linkCurvature(0.25);
+    // .onNodeClick(node => window.open(`https://bl.ocks.org/${node.user}/${node.id}`, '_blank'));
+
+
+    </script>
+  </body>
+</html>
