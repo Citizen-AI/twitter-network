@@ -1,0 +1,133 @@
+<!DOCTYPE html>
+<meta charset="utf-8">
+<html>
+<head>
+<style>
+
+.links line {
+  stroke: #999;
+  stroke-opacity: 0.6;
+}
+
+.nodes circle {
+  stroke: #fff;
+  stroke-width: 1.5px;
+}
+
+
+text {
+  font-family: sans-serif;
+  font-size: 10px;
+  color: green;
+}
+
+body { margin: 0; }
+
+</style>
+<script src="https://d3js.org/d3.v4.min.js"></script>
+</head>
+<body>
+</body>
+<script>
+
+
+width = window.innerWidth;
+height = window.innerHeight;
+
+d3.select('body')
+  .append("svg")
+  .attr("width", width)
+  .attr("height", height);
+
+var svg = d3.select("svg");
+
+size_scale = d3.scaleLinear()
+  .domain([1, 200])
+  .range([4,30])
+
+node_size = d => size_scale(d.val);
+
+node_colour = d => {
+  switch(d.type) {
+    case 'Republican': return 'red';
+    case 'Democrat': return 'blue';
+    default: return 'black'
+  }
+}
+
+node_label = d => d.name;
+node_title = d => d.description;
+
+
+d3.json('../output/us-congress.json', (error, graph) => {
+  var link_force = d3.forceLink(graph.links).id(d => d.id)
+
+  var g = svg.append("g").attr("class", "everything");
+
+  var link = g.append("g")
+    .attr("class", "links")
+    .selectAll("line")
+    .data(graph.links)
+    .enter().append("line")
+    .attr("stroke-width", 1)
+    .style("stroke", 'black')
+    .style("stroke-opacity", 0.05);
+
+  var circle = g.append('g')
+      .attr('class', 'nodes')
+    .selectAll('circle')
+      .data(graph.nodes)
+    .enter().append('circle')
+      .attr("r", node_size)
+      .attr("fill", node_colour);
+
+
+  var drag_handler = d3.drag()
+    .on("start", d => {
+        if (!d3.event.active) simulation.alphaTarget(0.3).restart();
+        d.fx = d.x;
+        d.fy = d.y; })
+    .on("drag", d => {
+        d.fx = d3.event.x;
+        d.fy = d3.event.y; })
+    .on("end", d => {
+        if (!d3.event.active) simulation.alphaTarget(0);
+        d.fx = null;
+        d.fy = null;});
+
+  drag_handler(circle);
+
+  tickActions = () => {
+    circle
+      .attr("cx", d => d.x)
+      .attr("cy", d => d.y);
+    link
+      .attr("x1", d => d.source.x)
+      .attr("y1", d => d.source.y)
+      .attr("x2", d => d.target.x)
+      .attr("y2", d => d.target.y);
+  }
+
+  var simulation = d3.forceSimulation()
+  	.nodes(graph.nodes)
+    .force("charge_force", d3.forceManyBody())
+    .force("center_force", d3.forceCenter(width / 2, height / 2))
+    .force("links", link_force)
+    .on("tick", tickActions);
+
+  zoom_actions = () => {
+    g.attr("transform", d3.event.transform)
+  }
+
+  var zoom_handler = d3.zoom().on("zoom", zoom_actions);
+
+  zoom_handler(svg);
+
+
+});
+
+
+// TODO: http://www.puzzlr.org/force-graphs-with-d3/
+
+</script>
+</html>

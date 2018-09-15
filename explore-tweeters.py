@@ -129,7 +129,7 @@ def csvs_to_3d_force_graph_json(nodes_csv, links_csv, output_json):
 # network_to_people('enspiral-network.csv', 'enspiral-people.csv')
 # csv_to_gsheet(['us-congress-people-with-party.csv'], '19u2ujgL9PffltGOGnz9lfvi9sKXekkjsvibIuq6PTbg')
 # csvs_to_3d_force_graph_json('enspiral-people2.csv', 'enspiral-network.csv', 'enspiral.json')
-csvs_to_3d_force_graph_json('us-congress-people-with-party.csv', 'us-congress-network.csv', 'us-congress.json')
+# csvs_to_3d_force_graph_json('us-congress-people-with-party.csv', 'us-congress-network.csv', 'us-congress.json')
 
 
 # TODO: https://bl.ocks.org/vasturiano/02affe306ce445e423f992faeea13521
