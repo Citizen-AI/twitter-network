@@ -1,8 +1,8 @@
 <!DOCTYPE html>
 <meta charset="utf-8">
 <html>
-<head>
-<style>
+  <head>
+    <style>
 
 .links line {
   stroke: #999;
@@ -17,19 +17,19 @@
 
 text {
   font-family: sans-serif;
-  font-size: 10px;
-  color: green;
+  font-size: 8px;
 }
 
 body { margin: 0; }
 
-</style>
-<script src="https://d3js.org/d3.v4.min.js"></script>
-</head>
-<body>
-</body>
-<script>
+    </style>
+    <script src="https://d3js.org/d3.v4.min.js"></script>
+  </head>
+  <body></body>
+  <script>
 
+// TODO: arrows
+// TODO: centred labels
 
 width = window.innerWidth;
 height = window.innerHeight;
@@ -45,21 +45,25 @@ size_scale = d3.scaleLinear()
   .domain([1, 200])
   .range([4,30])
 
-node_size = d => size_scale(d.val);
 
-node_colour = d => {
-  switch(d.type) {
+party_colour = type => {
+  switch(type) {
     case 'Republican': return 'red';
     case 'Democrat': return 'blue';
-    default: return 'black'
+    default: return '#ccc'
   }
 }
 
+node_size = d => size_scale(d.val);
+node_colour = d => party_colour(d.type)
 node_label = d => d.name;
 node_title = d => d.description;
 
 
+
 d3.json('../output/us-congress.json', (error, graph) => {
+  link_colour = d => party_colour(graph.nodes.find(n => n.id===d.source).type);
+
   var link_force = d3.forceLink(graph.links).id(d => d.id)
 
   var g = svg.append("g").attr("class", "everything");
@@ -70,17 +74,27 @@ d3.json('../output/us-congress.json', (error, graph) => {
     .data(graph.links)
     .enter().append("line")
     .attr("stroke-width", 1)
-    .style("stroke", 'black')
-    .style("stroke-opacity", 0.05);
+    .style("stroke", link_colour)
+    .style("stroke-opacity", 0.1);
 
-  var circle = g.append('g')
+  var elem = g.append('g')
       .attr('class', 'nodes')
     .selectAll('circle')
       .data(graph.nodes)
-    .enter().append('circle')
-      .attr("r", node_size)
-      .attr("fill", node_colour);
+    .enter()
+      .append('g')
 
+  circle = elem
+    .append('circle')
+      .attr("r", node_size)
+      .attr("fill", node_colour)
+      .style('stroke', 'none')
+
+
+  text = elem
+    .append('text')
+      .text(d => d.name)
+    // .append("title").text(d => d.description);
 
   var drag_handler = d3.drag()
     .on("start", d => {
@@ -95,12 +109,15 @@ d3.json('../output/us-congress.json', (error, graph) => {
         d.fx = null;
         d.fy = null;});
 
-  drag_handler(circle);
+  drag_handler(elem);
 
   tickActions = () => {
     circle
       .attr("cx", d => d.x)
       .attr("cy", d => d.y);
+    text
+      .attr("x", d => d.x)
+      .attr("y", d => d.y);
     link
       .attr("x1", d => d.source.x)
       .attr("y1", d => d.source.y)
@@ -123,11 +140,7 @@ d3.json('../output/us-congress.json', (error, graph) => {
 
   zoom_handler(svg);
 
-
 });
 
-
-// TODO: http://www.puzzlr.org/force-graphs-with-d3/
-
-</script>
+  </script>
 </html>
