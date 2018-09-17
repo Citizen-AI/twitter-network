@@ -10,12 +10,13 @@ body {
 
 .links line {
   stroke: #999;
-  stroke-opacity: 0.6;
+  stroke-opacity: 0.33;
+  vector-effect: non-scaling-stroke;
 }
 
 .nodes circle {
-  stroke: #fff;
-  stroke-width: 1.5px;
+  stroke-width: 1px;
+  vector-effect: non-scaling-stroke;
 }
 
 text {
@@ -44,28 +45,31 @@ var svg = d3.select("svg");
 
 size_scale = d3.scaleLinear()
   .domain([1, 200])
-  .range([4,50])
+  .range([4,70])
 
 
 party_colour = type => {
   switch(type) {
-    case 'Republican': return 'red';
-    case 'Democrat': return 'blue';
-    default: return '#999'
+    case 'National': return 'blue';
+    case 'Labour': return 'red';
+    case 'NZ First': return 'black';
+    case 'Green': return 'green';
+    case 'Act': return 'yellow';
+    default: return '#999';
   }
 }
 
 node_size = d => size_scale(d.val);
 image_size = d => size_scale(d.val) * 2;
-node_colour = d => party_colour(d.type)
+node_colour = d => party_colour(d.party)
 node_label = d => d.name;
 node_title = d => d.description;
 node_fill = d => d.image ? 'url(' + d.image + ')' : 'white';
 
 
 
-d3.json('../output/us-congress.json', (error, graph) => {
-  link_colour = d => party_colour(graph.nodes.find(n => n.id===d.source).type);
+d3.json('../output/mps.json', (error, graph) => {
+  link_colour = d => party_colour(graph.nodes.find(n => n.id===d.source).party);
 
   var link_force = d3.forceLink(graph.links).id(d => d.id)
 
@@ -75,10 +79,9 @@ d3.json('../output/us-congress.json', (error, graph) => {
     .attr("class", "links")
     .selectAll("line")
     .data(graph.links)
-    .enter().append("line")
-    .attr("stroke-width", 1)
-    .style("stroke", link_colour)
-    .style("stroke-opacity", 0.1);
+    .enter()
+      .append("line")
+      .style("stroke", link_colour);
 
 
   var defs = g.append('defs')
@@ -108,7 +111,6 @@ d3.json('../output/us-congress.json', (error, graph) => {
     .append('circle')
       .attr("r", node_size)
       .style("fill", 'white')
-      // .style('fill', node_fill)
       .style('stroke', node_colour)
       .style('fill', d => 'url(#' + d.id + ')')
     .append("title").text(d => d.name + ': ' + d.description);
@@ -156,7 +158,7 @@ d3.json('../output/us-congress.json', (error, graph) => {
 
   var zoom_handler = d3.zoom().on("zoom", zoom_actions);
 
-  zoom_handler(svg);
+  zoom_handler(g);
 
 });
 

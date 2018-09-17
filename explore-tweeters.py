@@ -80,17 +80,19 @@ def populate_profiles(people_csv):
     people.to_csv(OUTPUT_FOLDER + people_csv, index=False, encoding='utf8')
 
 
-def add_party_to_list(list_csv):
+def add_party_to_list(list_csv, country='us'):
     """Looks for US political party affiliation"""
-    list = pd.read_csv(list_csv)
+    list = pd.read_csv(OUTPUT_FOLDER + list_csv)
     for index in list.index:
         name = list.at[index, 'name']
         description = list.at[index, 'description']
-        party = find_party.search(description) or find_party.search(name) or find_party.knowledge_graph_get_party(name)
+        party = find_party.search(description, country) or \
+                find_party.search(name, country) or \
+                find_party.knowledge_graph_get_party(name, country)
         print(name, ',', party)
         if party:
             list.at[index, 'party'] = party
-    list.to_csv(list_csv, index=False, encoding='utf8')
+    list.to_csv(OUTPUT_FOLDER + list_csv, index=False, encoding='utf8')
 
 
 def merge_people(csv1, csv2, output_csv):
@@ -115,27 +117,22 @@ def csvs_to_3d_force_graph_json(nodes_csv, links_csv, output_json):
         json.dump(output, f, indent=4)
 
 
-
-
-
-
-# list_to_csv('enspiral-friends', 'booleanvalue', 'enspiral.csv')
-# add_party_to_list('us-congress.csv')
-# remove_unpopular_people('enspiral-people.csv', 'enspiral-network.csv', 3)
-# populate_profiles('enspiral-people.csv')
-# merge_people('enspiral.csv', 'enspiral-people.csv', 'enspiral-people2.csv')
-# list_faves_to_csv('enspiral-friends', 'booleanvalue', 'enspiral-faves.csv')
-# faves_to_network('enspiral-faves.csv', 'enspiral-network.csv')
-# network_to_people('enspiral-network.csv', 'enspiral-people.csv')
+# list_to_csv('mps', 'NZParliament', 'mps.csv')
+# add_party_to_list('mps.csv', 'nz')
+# list_faves_to_csv('mps', 'NZParliament', 'mps-faves.csv')
+# faves_to_network('mps-faves.csv', 'mps-network.csv')
+# network_to_people('mps-network.csv', 'mps-people.csv')
+# remove_unpopular_people('mps-people.csv', 'mps-network.csv', 2)
+# populate_profiles('mps-people.csv')
+# merge_people('mps.csv', 'mps-people.csv', 'mps-people2.csv')
 # csv_to_gsheet(['us-congress-people-with-party.csv'], '19u2ujgL9PffltGOGnz9lfvi9sKXekkjsvibIuq6PTbg')
-# csvs_to_3d_force_graph_json('enspiral-people2.csv', 'enspiral-network.csv', 'enspiral.json')
-# csvs_to_3d_force_graph_json('us-congress-people-with-party.csv', 'us-congress-network.csv', 'us-congress.json')
+csvs_to_3d_force_graph_json('mps-people2.csv', 'mps-network.csv', 'mps.json')
 
 
 # TODO: https://bl.ocks.org/vasturiano/02affe306ce445e423f992faeea13521
 # TODO: include even unpopular people
 # TODO: Can we get more of long tweets?
-
+# TODO:
 
 # def people_from_network():
 #     network = pd.read_csv('network.csv')

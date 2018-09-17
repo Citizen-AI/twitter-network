@@ -28,20 +28,33 @@ def knowledge_graph_get(query):
             return ''
 
 
-def search(str):
+def search(str, country='us'):
     output = None
     try:
-        if re.search('Independent', str, re.IGNORECASE):
-            output = 'Republican'
-        elif re.search('Republican', str):
-            output = 'Republican'
-        elif re.search('Democrat', str):
-            output = 'Democrat'
+        if country is 'us':
+            if re.search('Independent', str, re.IGNORECASE):
+                output = 'Republican'
+            elif re.search('Republican', str):
+                output = 'Republican'
+            elif re.search('Democrat', str):
+                output = 'Democrat'
+        elif country is 'nz':
+            if re.search('National', str):
+                output = 'National'
+            elif re.search('Labour', str):
+                output = 'Labour'
+            elif re.search('NZ First|New Zealand First', str):
+                output = 'NZ First'
+            elif re.search('Green', str):
+                output = 'Green'
+            elif re.search('Act', str):
+                output = 'Act'
+
     except: pass
     return output
 
 
-def knowledge_graph_get_party(person):
+def knowledge_graph_get_party(person, country):
     kg_details = knowledge_graph_get(person)
     pprint(kg_details)
-    return search(kg_details)
+    return search(kg_details, country)
