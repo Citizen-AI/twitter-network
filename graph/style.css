@@ -1,0 +1,24 @@
+body {
+  margin: 0;
+  background: #333333; }
+
+.links line {
+  stroke: #999;
+  stroke-opacity: 0.2;
+  stroke-width: 1.5px;
+  vector-effect: non-scaling-stroke;
+}
+
+.nodes circle {
+  stroke-width: 1px;
+  vector-effect: non-scaling-stroke;
+}
+.nodes circle:hover {
+  stroke: white ! important;
+}
+
+
+text {
+  font-family: sans-serif;
+  font-size: 8px;
+}

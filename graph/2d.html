@@ -2,36 +2,18 @@
 <meta charset="utf-8">
 <html>
   <head>
-    <style>
-
-body {
-  margin: 0;
-  background: black; }
-
-.links line {
-  stroke: #999;
-  stroke-opacity: 0.33;
-  vector-effect: non-scaling-stroke;
-}
-
-.nodes circle {
-  stroke-width: 1px;
-  vector-effect: non-scaling-stroke;
-}
-
-text {
-  font-family: sans-serif;
-  font-size: 8px;
-}
-
-    </style>
-    <script src="https://d3js.org/d3.v4.min.js"></script>
+    <link rel="stylesheet" type="text/css" href="style.css">
+    <script src="https://d3js.org/d3.v5.min.js"></script>
   </head>
   <body></body>
   <script>
 
-// TODO: arrows
+// TODO: arrows coloured
 // TODO: centred labels
+// TODO: button for turning links on and off
+// TODO: float over node to turn on its links for a while
+// TODO: download images
+// TODO: search
 
 width = window.innerWidth;
 height = window.innerHeight;
@@ -43,9 +25,11 @@ d3.select('body')
 
 var svg = d3.select("svg");
 
-size_scale = d3.scaleLinear()
-  .domain([1, 200])
-  .range([4,70])
+size_scale = d3
+  .scalePow()
+    .exponent(0.5)
+    .domain([0, 50])
+    .range([1,30])
 
 
 party_colour = type => {
@@ -55,112 +39,153 @@ party_colour = type => {
     case 'NZ First': return 'black';
     case 'Green': return 'green';
     case 'Act': return 'yellow';
-    default: return '#999';
+    default: return '#888';
   }
 }
+
+link_source_node = (nodes, node) => nodes.find(n => n.id === node.source)
+node_links = (links, node) => links.filter(l => l.source===node.id)
 
 node_size = d => size_scale(d.val);
 image_size = d => size_scale(d.val) * 2;
 node_colour = d => party_colour(d.party)
 node_label = d => d.name;
-node_title = d => d.description;
+node_title = d => d.name + ': ' + d.description;
 node_fill = d => d.image ? 'url(' + d.image + ')' : 'white';
+link_text = d => d.last_text;
 
+d3
+  .json('../output/mps.json')
+  .then(graph => {
+    link_colour = d => party_colour(link_source_node(graph.nodes, d).party);
 
+    var g = svg.append("g")
+      .attr("class", "everything");
 
-d3.json('../output/mps.json', (error, graph) => {
-  link_colour = d => party_colour(graph.nodes.find(n => n.id===d.source).party);
+    var defs = g.append('defs')
 
-  var link_force = d3.forceLink(graph.links).id(d => d.id)
-
-  var g = svg.append("g").attr("class", "everything");
-
-  var link = g.append("g")
-    .attr("class", "links")
-    .selectAll("line")
-    .data(graph.links)
-    .enter()
-      .append("line")
-      .style("stroke", link_colour);
-
-
-  var defs = g.append('defs')
-  var imgPattern = defs.selectAll("pattern")
-    .data(graph.nodes)
-  	.enter()
-      .append("pattern")
-        .attr("id", d => d.id)
-        .attr("width", 1)
-        .attr("height", 1)
-        .attr("patternUnits", "objectBoundingBox")
-    	.append("image")
-    		.attr("x", 0)
-    		.attr("y", 0)
-    		.attr("width", image_size)
-        .attr("height", image_size)
-        .attr("xlink:href", d => d.image)
-
-  var elem = g.append('g')
-      .attr('class', 'nodes')
-    .selectAll('circle')
+    var imgPattern = defs.selectAll("pattern")
       .data(graph.nodes)
-    .enter()
-      .append('g')
+    	.enter()
+        .append("pattern")
+          .attr("id", d => d.id)
+          .attr("width", 1)
+          .attr("height", 1)
+          .attr("patternUnits", "objectBoundingBox")
+      	.append("image")
+      		.attr("x", 0)
+      		.attr("y", 0)
+      		.attr("width", image_size)
+          .attr("height", image_size)
+          .attr("xlink:href", d => d.image)
 
-  var circle = elem
-    .append('circle')
-      .attr("r", node_size)
-      .style("fill", 'white')
-      .style('stroke', node_colour)
-      .style('fill', d => 'url(#' + d.id + ')')
-    .append("title").text(d => d.name + ': ' + d.description);
+    var arrows = defs.selectAll("marker") // https://jsfiddle.net/4xt5v51m/3/
+            .data(["end"])
+          .enter().append("svg:marker")
+            .attr("id", String)
+            .attr("viewBox", "0 -5 10 10")
+            .attr("refX", 0)
+            .attr("refY", 0.5)
+            .attr("markerWidth", 2)
+            .attr("markerHeight", 2)
+            .attr("orient", "auto")
+            .attr("fill", 'white')
+          .append("svg:path")
+            .attr("d", "M0,-5L10,0L0,5");
 
-  // text = elem
-  //   .append('text')
-  //     .text(d => d.name)
-
-  var drag_handler = d3.drag()
-    .on("start", d => {
-        if (!d3.event.active) simulation.alphaTarget(0.3).restart();
-        d.fx = d.x;
-        d.fy = d.y; })
-    .on("drag", d => {
-        d.fx = d3.event.x;
-        d.fy = d3.event.y; })
-    .on("end", d => {
-        if (!d3.event.active) simulation.alphaTarget(0);
-        d.fx = null;
-        d.fy = null;});
-
-  drag_handler(elem);
-
-  tickActions = () => {
-    elem.attr('transform', d => 'translate(' + d.x + ',' + d.y + ')')
+    var link = g.append("g")
+      .attr("class", "links")
+      .selectAll("line")
+      .data(graph.links)
+      .enter()
+        .append("line")
+          .style("stroke", link_colour)
+          // .style("stroke-width", 0)
+          .attr("marker-end", "url(#end)")
 
     link
-      .attr("x1", d => d.source.x)
-      .attr("y1", d => d.source.y)
-      .attr("x2", d => d.target.x)
-      .attr("y2", d => d.target.y);
-  }
+      .append("title")
+      .text(link_text);
 
-  var simulation = d3.forceSimulation()
-  	.nodes(graph.nodes)
-    .force("charge_force", d3.forceManyBody())
-    .force("center_force", d3.forceCenter(width / 2, height / 2))
-    .force('collision', d3.forceCollide().radius(node_size))
-    .force("links", link_force)
-    .on("tick", tickActions);
+    var elem = g.append('g')
+        .attr('class', 'nodes')
+      .selectAll('circle')
+        .data(graph.nodes)
+      .enter()
+        .append('g')
 
-  zoom_actions = () => {
-    g.attr("transform", d3.event.transform)
-  }
+    var circle = elem
+      .append('circle')
+        .attr("r", node_size)
+        .style("fill", 'white')
+        .style('stroke', node_colour)
+        .style('fill', d => 'url(#' + d.id + ')')
+      .append("title").text(node_title);
 
-  var zoom_handler = d3.zoom().on("zoom", zoom_actions);
+    var drag_handler = d3.drag()
+      .on("start", d => {
+          if (!d3.event.active) simulation.alphaTarget(0.3).restart();
+          d.fx = d.x;
+          d.fy = d.y; })
+      .on("drag", d => {
+          d.fx = d3.event.x;
+          d.fy = d3.event.y; })
+      .on("end", d => {
+          if (!d3.event.active) simulation.alphaTarget(0);
+          d.fx = null;
+          d.fy = null;});
 
-  zoom_handler(g);
+    drag_handler(elem);
 
-});
+    tick = () => {
+      elem.attr('transform', d => 'translate(' + d.x + ',' + d.y + ')')
+
+      var arrowLength = 2;  // https://stackoverflow.com/a/24313834/1876628
+      link.each(d => {
+        var nodeRadius = size_scale(d.target.val);
+        var x1 = d.source.x,
+            y1 = d.source.y,
+            x2 = d.target.x,
+            y2 = d.target.y,
+            angle = Math.atan2(y2 - y1, x2 - x1);
+        d.targetX = x2 - Math.cos(angle) * (nodeRadius + arrowLength);
+        d.targetY = y2 - Math.sin(angle) * (nodeRadius + arrowLength);
+      });
+
+      link
+        .attr("x1", d => d.source.x)
+        .attr("y1", d => d.source.y)
+        .attr("x2", d => d.targetX)
+        .attr("y2", d => d.targetY);
+
+      // link  // https://bl.ocks.org/BTKY/6c282b65246f8f46bb55aadc322db709
+      //   .attr("d", d => {
+      //     var dx = d.target.x - d.source.x,
+      //         dy = d.target.y - d.source.y,
+      //         dr = Math.sqrt(dx * dx + dy * dy);
+      //     return "M" +
+      //         d.source.x + "," +
+      //         d.source.y + "A" +
+      //         dr + "," + dr + " 0 0,1 " +
+      //         d.target.x + "," +
+      //         d.target.y;
+      //     });
+    }
+
+    var simulation = d3.forceSimulation()
+    	.nodes(graph.nodes)
+      .force('charge_force', d3.forceManyBody().strength(-50))
+      .force('center_force', d3.forceCenter(width / 2, height / 2))
+      .force('collision', d3.forceCollide().radius(node_size))
+      .force('links', d3.forceLink(graph.links).id(d => d.id))
+      .on('tick', tick);
+
+    var zoom_handler = d3
+      .zoom()
+      .on("zoom", () => g.attr("transform", d3.event.transform));
+
+    zoom_handler(g);
+  });
 
   </script>
 </html>
