@@ -11,8 +11,8 @@
 // TODO: arrows coloured
 // TODO: centred labels
 // TODO: button for turning links on and off
-// TODO: float over node to turn on its links for a while
-// TODO: download images
+// TODO: https://bl.ocks.org/BTKY/6c282b65246f8f46bb55aadc322db709
+// TODO: download images before rendering anything
 // TODO: search
 
 width = window.innerWidth;
@@ -28,7 +28,7 @@ var svg = d3.select("svg");
 size_scale = d3
   .scalePow()
     .exponent(0.5)
-    .domain([0, 50])
+    .domain([0, 100])
     .range([1,30])
 
 
@@ -55,7 +55,7 @@ node_fill = d => d.image ? 'url(' + d.image + ')' : 'white';
 link_text = d => d.last_text;
 
 d3
-  .json('../output/mps.json')
+  .json('mps.json')
   .then(graph => {
     link_colour = d => party_colour(link_source_node(graph.nodes, d).party);
 
@@ -100,7 +100,6 @@ d3
       .enter()
         .append("line")
           .style("stroke", link_colour)
-          // .style("stroke-width", 0)
           .attr("marker-end", "url(#end)")
 
     link
@@ -120,7 +119,16 @@ d3
         .style("fill", 'white')
         .style('stroke', node_colour)
         .style('fill', d => 'url(#' + d.id + ')')
+        .on('mouseover', d => {   // https://stackoverflow.com/questions/19111581/d3js-force-directed-on-hover-to-node-highlight-colourup-linked-nodes-and-link
+          link.style('stroke-opacity', l =>
+            (d.id === l.source.id || d.id === l.target.id) ? 1 : 0.05)
+          }
+        )
+        .on('mouseout', d => link.style('stroke-opacity', 0.05))
       .append("title").text(node_title);
+
+
+
 
     var drag_handler = d3.drag()
       .on("start", d => {
@@ -157,24 +165,11 @@ d3
         .attr("y1", d => d.source.y)
         .attr("x2", d => d.targetX)
         .attr("y2", d => d.targetY);
-
-      // link  // https://bl.ocks.org/BTKY/6c282b65246f8f46bb55aadc322db709
-      //   .attr("d", d => {
-      //     var dx = d.target.x - d.source.x,
-      //         dy = d.target.y - d.source.y,
-      //         dr = Math.sqrt(dx * dx + dy * dy);
-      //     return "M" +
-      //         d.source.x + "," +
-      //         d.source.y + "A" +
-      //         dr + "," + dr + " 0 0,1 " +
-      //         d.target.x + "," +
-      //         d.target.y;
-      //     });
     }
 
     var simulation = d3.forceSimulation()
     	.nodes(graph.nodes)
-      .force('charge_force', d3.forceManyBody().strength(-50))
+      .force('charge_force', d3.forceManyBody().strength(-60))
       .force('center_force', d3.forceCenter(width / 2, height / 2))
       .force('collision', d3.forceCollide().radius(node_size))
       .force('links', d3.forceLink(graph.links).id(d => d.id))
