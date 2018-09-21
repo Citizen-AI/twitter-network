@@ -8,12 +8,14 @@
   <body></body>
   <script>
 
-// TODO: arrows coloured
+// TODO: arrows coloured https://stackoverflow.com/a/27803193/1876628
+// TODO: arrows moved to account for their size
 // TODO: centred labels
 // TODO: button for turning links on and off
 // TODO: https://bl.ocks.org/BTKY/6c282b65246f8f46bb55aadc322db709
 // TODO: download images before rendering anything
 // TODO: search
+// TODO: weight links by 'times'
 
 width = window.innerWidth;
 height = window.innerHeight;
@@ -25,12 +27,13 @@ d3.select('body')
 
 var svg = d3.select("svg");
 
-size_scale = d3
-  .scalePow()
-    .exponent(0.5)
-    .domain([0, 100])
-    .range([1,30])
-
+size_scale = d3.scalePow()
+                  .exponent(0.5)
+                  .domain([0, 100])
+                  .range([1,30])
+stroke_scale = d3.scaleLinear()
+                   .domain([1,60])
+                   .range([1,15])
 
 party_colour = type => {
   switch(type) {
@@ -53,6 +56,9 @@ node_label = d => d.name;
 node_title = d => d.name + ': ' + d.description;
 node_fill = d => d.image ? 'url(' + d.image + ')' : 'white';
 link_text = d => d.last_text;
+stroke_width = d => stroke_scale(d.times);
+
+stroke_off_opacity = 0.05;
 
 d3
   .json('mps.json')
@@ -86,8 +92,8 @@ d3
             .attr("viewBox", "0 -5 10 10")
             .attr("refX", 0)
             .attr("refY", 0.5)
-            .attr("markerWidth", 2)
-            .attr("markerHeight", 2)
+            .attr("markerWidth", 1.5)
+            .attr("markerHeight", 1.5)
             .attr("orient", "auto")
             .attr("fill", 'white')
           .append("svg:path")
@@ -100,6 +106,8 @@ d3
       .enter()
         .append("line")
           .style("stroke", link_colour)
+          .style("stroke-opacity", stroke_off_opacity)
+          .style("stroke-width", stroke_width)
           .attr("marker-end", "url(#end)")
 
     link
@@ -121,10 +129,10 @@ d3
         .style('fill', d => 'url(#' + d.id + ')')
         .on('mouseover', d => {   // https://stackoverflow.com/questions/19111581/d3js-force-directed-on-hover-to-node-highlight-colourup-linked-nodes-and-link
           link.style('stroke-opacity', l =>
-            (d.id === l.source.id || d.id === l.target.id) ? 1 : 0.05)
+            (d.id === l.source.id || d.id === l.target.id) ? 1 : stroke_off_opacity)
           }
         )
-        .on('mouseout', d => link.style('stroke-opacity', 0.05))
+        .on('mouseout', d => link.style('stroke-opacity', stroke_off_opacity))
       .append("title").text(node_title);
 
 

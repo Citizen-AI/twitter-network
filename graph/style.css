@@ -4,7 +4,6 @@ body {
 
 .links line {
   stroke: #999;
-  stroke-opacity: 0.05;
   stroke-width: 1.5px;
   vector-effect: non-scaling-stroke;
 }
