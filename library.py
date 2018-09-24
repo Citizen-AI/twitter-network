@@ -10,6 +10,9 @@ from gspread_dataframe import set_with_dataframe
 from distutils.util import strtobool
 
 
+OUTPUT_FOLDER = 'output/'
+
+
 def wordcount(text, n):
     stopwords = set(line.strip() for line in open('stopwords.txt'))
     stopwords = stopwords.union(set(['a', 'i', 'amp', 'youre', 'ive', 'im', 'yep']))
@@ -49,3 +52,12 @@ def csv_to_gsheet(csv_file_names, google_sheet_key):
             worksheet = sheets.add_worksheet(title=csv_file_name, rows=df.shape[0], cols=df.shape[1])
             print('Uploading',csv_file_name)
             set_with_dataframe(worksheet, df)
+
+
+def pd_to_csv(df, filename):
+    df.to_csv(OUTPUT_FOLDER + filename, index=False, encoding='utf8')
+
+
+def clean(text_list):
+    '''Get rid of links, mentions and hashtags'''
+    return [re.sub(r'\bhttps?://t.co/.+?\b|@.+?\b|#.+?\b|&amp;', ' ', line) for line in text_list]

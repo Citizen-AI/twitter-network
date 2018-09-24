@@ -8,6 +8,7 @@ import json
 
 import connect_to_twitter
 from library import wordcount, print_err, column_contains_value, csv_to_gsheet
+from kmeans_text_clustering import cluster
 import user_faves
 import find_party
 
@@ -51,13 +52,14 @@ def network_to_people(network_csv, people_csv):
     people.to_csv(OUTPUT_FOLDER + people_csv, index=False, encoding='utf8')
 
 
-def remove_unpopular_people(people_csv, network_csv, minimum_favees=1):
-    people = pd.read_csv(OUTPUT_FOLDER + people_csv)
-    network = pd.read_csv(OUTPUT_FOLDER + network_csv)
+def remove_unpopular_people(in_people_csv, in_network_csv, out_people_csv, out_network_csv, minimum_favees=1):
+    print('Removing people from', in_people_csv, 'and', out_people_csv, 'who have fewer than', minimum_favees, 'connections')
+    people = pd.read_csv(OUTPUT_FOLDER + in_people_csv)
+    network = pd.read_csv(OUTPUT_FOLDER + in_network_csv)
     popular_people = people.loc[people['favees'] >= minimum_favees]
     network = network.loc[network['to'].isin(popular_people['label'])]
-    popular_people.to_csv(OUTPUT_FOLDER + people_csv, index=False, encoding='utf8')
-    network.to_csv(OUTPUT_FOLDER + network_csv, index=False, encoding='utf8')
+    popular_people.to_csv(OUTPUT_FOLDER + out_people_csv, index=False, encoding='utf8')
+    network.to_csv(OUTPUT_FOLDER + out_network_csv, index=False, encoding='utf8')
 
 
 def populate_profiles(people_csv):
@@ -98,11 +100,11 @@ def add_party_to_list(list_csv, country='us'):
 def merge_people(csv1, csv2, output_csv):
     df1 = pd.read_csv(OUTPUT_FOLDER + csv1)
     df2 = pd.read_csv(OUTPUT_FOLDER + csv2)
-    merged = pd.merge(df1, df2, on=['label','name','description'], how='outer')
+    merged = pd.merge(df1, df2, on=['label','name','description', 'party'], how='outer')
     merged.to_csv(OUTPUT_FOLDER + output_csv, index=False, encoding='utf8')
 
 
-def csvs_to_3d_force_graph_json(nodes_csv, links_csv, output_json):
+def csvs_to_force_graph_json(nodes_csv, links_csv, output_json):
     nodes_df = pd.read_csv(OUTPUT_FOLDER + nodes_csv, keep_default_na=False)
     nodes_df.rename(columns={'label':'id', 'favees':'val'}, inplace=True)
     nodes = nodes_df.to_dict('records')
@@ -122,11 +124,18 @@ def csvs_to_3d_force_graph_json(nodes_csv, links_csv, output_json):
 # list_faves_to_csv('mps', 'NZParliament', 'mps-faves.csv')
 # faves_to_network('mps-faves.csv', 'mps-network.csv')
 # network_to_people('mps-network.csv', 'mps-people.csv')
-# remove_unpopular_people('mps-people.csv', 'mps-network.csv', 2)
+remove_unpopular_people(in_people_csv='mps-people2.csv',
+                        in_network_csv='mps-network.csv',
+                        out_people_csv='mps-people3.csv',
+                        out_network_csv='mps-network3.csv',
+                        minimum_favees=3)
+merge_people(csv1='mps.csv',
+             csv2='mps-people3.csv',
+             output_csv='mps-people3.csv')
+csvs_to_force_graph_json('mps-people3.csv', 'mps-network3.csv', '../graph/mps3.json')
 # populate_profiles('mps-people.csv')
-# merge_people('mps.csv', 'mps-people.csv', 'mps-people2.csv')
 # csv_to_gsheet(['us-congress-people-with-party.csv'], '19u2ujgL9PffltGOGnz9lfvi9sKXekkjsvibIuq6PTbg')
-csvs_to_3d_force_graph_json('mps-people2.csv', 'mps-network.csv', 'mps.json')
+
 
 
 # TODO: https://bl.ocks.org/vasturiano/02affe306ce445e423f992faeea13521

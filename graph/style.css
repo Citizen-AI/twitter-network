@@ -4,7 +4,6 @@ body {
 
 .links line {
   stroke: #999;
-  stroke-width: 1.5px;
   vector-effect: non-scaling-stroke;
 }
 
@@ -20,4 +19,9 @@ body {
 text {
   font-family: sans-serif;
   font-size: 8px;
+  fill: #999;
+  text-anchor: middle;
+  stroke: black;
+  stroke-width: 2;
+  paint-order: stroke;
 }

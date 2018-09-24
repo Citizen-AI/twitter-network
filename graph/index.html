@@ -11,11 +11,14 @@
 // TODO: arrows coloured https://stackoverflow.com/a/27803193/1876628
 // TODO: arrows moved to account for their size
 // TODO: centred labels
+// TODO: wrapped labels https://bl.ocks.org/mbostock/7555321
 // TODO: button for turning links on and off
 // TODO: https://bl.ocks.org/BTKY/6c282b65246f8f46bb55aadc322db709
 // TODO: download images before rendering anything
 // TODO: search
 // TODO: weight links by 'times'
+// TODO: stop lonely nodes from flying away
+
 
 width = window.innerWidth;
 height = window.innerHeight;
@@ -41,7 +44,7 @@ party_colour = type => {
     case 'Labour': return 'red';
     case 'NZ First': return 'black';
     case 'Green': return 'green';
-    case 'Act': return 'yellow';
+    case 'ACT': return 'yellow';
     default: return '#888';
   }
 }
@@ -53,7 +56,7 @@ node_size = d => size_scale(d.val);
 image_size = d => size_scale(d.val) * 2;
 node_colour = d => party_colour(d.party)
 node_label = d => d.name;
-node_title = d => d.name + ': ' + d.description;
+node_title = d => d.description;
 node_fill = d => d.image ? 'url(' + d.image + ')' : 'white';
 link_text = d => d.last_text;
 stroke_width = d => stroke_scale(d.times);
@@ -61,7 +64,7 @@ stroke_width = d => stroke_scale(d.times);
 stroke_off_opacity = 0.05;
 
 d3
-  .json('mps.json')
+  .json('mps3.json')
   .then(graph => {
     link_colour = d => party_colour(link_source_node(graph.nodes, d).party);
 
@@ -114,6 +117,17 @@ d3
       .append("title")
       .text(link_text);
 
+    var labels_group = g
+      .append("g")
+        .attr('class', 'labels')
+
+    var label = labels_group
+        .selectAll("text")
+        .data(graph.nodes)
+          .enter()
+            .append("text")
+              .text(node_label);
+
     var elem = g.append('g')
         .attr('class', 'nodes')
       .selectAll('circle')
@@ -133,8 +147,7 @@ d3
           }
         )
         .on('mouseout', d => link.style('stroke-opacity', stroke_off_opacity))
-      .append("title").text(node_title);
-
+      .append('title').text(node_title);
 
 
 
@@ -173,6 +186,10 @@ d3
         .attr("y1", d => d.source.y)
         .attr("x2", d => d.targetX)
         .attr("y2", d => d.targetY);
+
+      label
+        .attr('x', d => d.x)
+        .attr('y', d => d.y + size_scale(d.val) + 12)
     }
 
     var simulation = d3.forceSimulation()
@@ -185,7 +202,10 @@ d3
 
     var zoom_handler = d3
       .zoom()
-      .on("zoom", () => g.attr("transform", d3.event.transform));
+      .on("zoom", () => {
+        g.attr("transform", d3.event.transform)
+      }
+    );
 
     zoom_handler(g);
   });
