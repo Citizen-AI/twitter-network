@@ -18,6 +18,7 @@
 // TODO: search
 // TODO: weight links by 'times'
 // TODO: stop lonely nodes from flying away
+// TODO: pull apart (fix nodes on drag
 
 
 width = window.innerWidth;
@@ -52,8 +53,8 @@ party_colour = type => {
 link_source_node = (nodes, node) => nodes.find(n => n.id === node.source)
 node_links = (links, node) => links.filter(l => l.source===node.id)
 
-node_size = d => size_scale(d.val);
-image_size = d => size_scale(d.val) * 2;
+node_size = d => d.val ? size_scale(d.val) : 5;
+image_size = d => d.val ? size_scale(d.val) * 2 : 10;
 node_colour = d => party_colour(d.party)
 node_label = d => d.name;
 node_title = d => d.description;
