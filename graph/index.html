@@ -14,7 +14,7 @@
     <meta property="og:description" content="An interactive visualisation exploring networks of influence and (bi)partisanship on Twitter" />
     <meta property="og:image:width" content="400" />
     <meta property="og:image:height" content="400" />
-    <link rel="icon" type="image/png" href="network-nodes-144-170805.png">    
+    <link rel="icon" type="image/png" href="network-nodes-144-170805.png">
   </head>
   <body>
     <div class="about">
@@ -24,7 +24,8 @@
         who've liked their tweets. MPs are coloured by political party where
         that was easy to deduce from their Twitter bios.
 
-      <p>Hover over people to see their connections. Drag people around to rearrange.
+      <p>Hover over people to see their connections. Hover over connections to
+        see the last tweet liked. Drag people around to rearrange.
         Connections grow thicker with the number of tweets liked. Pinch or scroll
         to zoom People with fewer than three favourited tweets have been hidden
         to simplify the chart.</p>
@@ -36,7 +37,7 @@
       <p>This is a work in progress by <a href="https://twitter.com/citizenai_nz">@citizenai</a>.
         Interpretations, suggestions, bug reports, etc most welcome. Many bugs
         remain! Code available on <a href="https://github.com/Citizen-AI/twitter-network">GitHub</a>.
-        Version 0.3.4. <nobr>License: <a href="https://creativecommons.org/licenses/by/3.0/nz/">CC BY 3.0 NZ</a></nobr></p>
+        Version 0.3.5. <nobr>License: <a href="https://creativecommons.org/licenses/by/3.0/nz/">CC BY 3.0 NZ</a></nobr></p>
 
     </div>
   </body>
@@ -53,6 +54,9 @@
 // TODO: highlight attached nodes http://bl.ocks.org/eyaler/10586116
 // TODO: max & min zoom
 // TODO: background drag https://bl.ocks.org/micahstubbs/6b3eb08318df8d58d5c21dcccf3063f4
+// TODO: download images
+// TODO: animate links by time
+// TODO: better tooltips http://api.jqueryui.com/tooltip/
 
 
 const about_box_width = 242;
@@ -90,8 +94,8 @@ stroke_scale = d3.scaleLinear()
                    .range([1,15])
 
 
-link_source_node = (nodes, node) => nodes.find(n => n.id === node.source)
-node_links = (links, node) => links.filter(l => l.source===node.id)
+link_source = (nodes, link) => nodes.find(n => n.id === link.source)
+link_target = (nodes, link) => nodes.find(n => n.id === link.target)
 
 node_size = d => d.val ? size_scale(d.val) : 5;
 image_size = d => d.val ? size_scale(d.val) * 2 : 10;
@@ -99,7 +103,6 @@ node_colour = d => party_colour(d.party)
 node_label = d => d.name;
 node_title = d => d.name + ': ' + d.description;
 node_fill = d => d.image ? 'url(' + d.image + ')' : 'white';
-link_text = d => d.last_text;
 stroke_width = d => stroke_scale(d.times);
 
 stroke_off_opacity = 0.035;
@@ -111,7 +114,12 @@ link_hover_off = function(d) { d3.select(this).style('stroke-opacity', stroke_of
 d3
   .json('mps3.json')
   .then(async graph => {
-    link_colour = d => party_colour(link_source_node(graph.nodes, d).party);
+    link_colour = d => party_colour(link_source(graph.nodes, d).party);
+    link_text = l => {
+      var source_name = link_source(graph.nodes, l).name;
+      var target_name = link_target(graph.nodes, l).name;
+      return `${source_name} liked ${target_name}'s tweet: ${l.last_text}`;
+    };
 
     var g = svg.append("g")
       .attr("class", "everything");
