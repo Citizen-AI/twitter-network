@@ -1,8 +1,9 @@
 body {
   margin: 0;
-  background: #333333; }
+  background: white; }
 
-.links line {
+.links line,
+.links path {
   stroke: #999;
   vector-effect: non-scaling-stroke;
 }
@@ -10,6 +11,7 @@ body {
 .nodes circle {
   stroke-width: 1px;
   vector-effect: non-scaling-stroke;
+  cursor: pointer;
 }
 .nodes circle:hover {
   stroke: white ! important;
@@ -19,9 +21,38 @@ body {
 text {
   font-family: sans-serif;
   font-size: 8px;
-  fill: #999;
+  fill: #777;
   text-anchor: middle;
-  stroke: black;
-  stroke-width: 2;
+  stroke: white;
+  stroke-width: 2px;
   paint-order: stroke;
+  vector-effect: non-scaling-stroke;
+  pointer-events: none;
+}
+
+div.about {
+  position: absolute;
+  left: 10px;
+  top: 10px;
+  width: 17em;
+  font-family: sans-serif;
+  /* z-index: -1; */
+}
+div.about h1 {
+  font-size: 1.5em;
+  color: #888;
+}
+div.about p {
+  margin: 0 0 0.5em;
+  line-height: 150%;
+  font-size: 0.75em;
+  color: #777;
+}
+div.about a:link,
+div.about a:visited {
+  color: #555;
+}
+div.about a:hover,
+div.about a:active {
+  color: black;
 }

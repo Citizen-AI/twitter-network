@@ -3,26 +3,76 @@
 <html>
   <head>
     <link rel="stylesheet" type="text/css" href="style.css">
+    <script src="library.js"></script>
     <script src="https://d3js.org/d3.v5.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/spin.js/2.3.2/spin.min.js"></script>
+
+    <title>The shape of New Zealand politics</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <meta charset="UTF-8">
+    <meta property="og:image" content="http://mps.citizenai.nz/preview-min.png" />
+    <meta property="og:description" content="An interactive visualisation exploring networks of influence and (bi)partisanship on Twitter" />
+    <meta property="og:image:width" content="400" />
+    <meta property="og:image:height" content="400" />
+    <link rel="icon" type="image/png" href="network-nodes-144-170805.png">    
   </head>
-  <body></body>
+  <body>
+    <div class="about">
+      <h1>Whose tweets do <nobr>New Zealand</nobr> MPs like?</h1>
+
+      <p>Arrows show likes. People's photos grow in proportion to the number of MPs
+        who've liked their tweets. MPs are coloured by political party where
+        that was easy to deduce from their Twitter bios.
+
+      <p>Hover over people to see their connections. Drag people around to rearrange.
+        Connections grow thicker with the number of tweets liked. Pinch or scroll
+        to zoom People with fewer than three favourited tweets have been hidden
+        to simplify the chart.</p>
+
+      <p>We were interested to see who our MPs are paying attention to; and
+        whether there is much bipartisanship evident. <strong>What do you see
+          in it?</strong></p>
+
+      <p>This is a work in progress by <a href="https://twitter.com/citizenai_nz">@citizenai</a>.
+        Interpretations, suggestions, bug reports, etc most welcome. Many bugs
+        remain! Code available on <a href="https://github.com/Citizen-AI/twitter-network">GitHub</a>.
+        Version 0.3.4. <nobr>License: <a href="https://creativecommons.org/licenses/by/3.0/nz/">CC BY 3.0 NZ</a></nobr></p>
+
+    </div>
+  </body>
   <script>
 
 // TODO: arrows coloured https://stackoverflow.com/a/27803193/1876628
 // TODO: arrows moved to account for their size
-// TODO: centred labels
 // TODO: wrapped labels https://bl.ocks.org/mbostock/7555321
 // TODO: button for turning links on and off
 // TODO: https://bl.ocks.org/BTKY/6c282b65246f8f46bb55aadc322db709
-// TODO: download images before rendering anything
-// TODO: search
+// TODO: search https://bl.ocks.org/vasturiano/321a770c3f4b041d1a4f40f1f4ecbb6c
 // TODO: weight links by 'times'
 // TODO: stop lonely nodes from flying away
-// TODO: pull apart (fix nodes on drag
+// TODO: highlight attached nodes http://bl.ocks.org/eyaler/10586116
+// TODO: max & min zoom
+// TODO: background drag https://bl.ocks.org/micahstubbs/6b3eb08318df8d58d5c21dcccf3063f4
 
 
-width = window.innerWidth;
-height = window.innerHeight;
+const about_box_width = 242;
+var width = window.innerWidth;
+var height = window.innerHeight;
+
+const opts = {
+  lines: 20,
+  length: 0,
+  width: 3,
+  radius: 45,
+  color: '#000',
+  speed: 0.5,
+  trail: 40,
+  className: 'spinner',
+  left: (width + about_box_width) / 2 / width * 100 + '%'
+};
+
+const spinner = new Spinner(opts).spin(document.body);
+
 
 d3.select('body')
   .append("svg")
@@ -39,16 +89,6 @@ stroke_scale = d3.scaleLinear()
                    .domain([1,60])
                    .range([1,15])
 
-party_colour = type => {
-  switch(type) {
-    case 'National': return 'blue';
-    case 'Labour': return 'red';
-    case 'NZ First': return 'black';
-    case 'Green': return 'green';
-    case 'ACT': return 'yellow';
-    default: return '#888';
-  }
-}
 
 link_source_node = (nodes, node) => nodes.find(n => n.id === node.source)
 node_links = (links, node) => links.filter(l => l.source===node.id)
@@ -57,16 +97,20 @@ node_size = d => d.val ? size_scale(d.val) : 5;
 image_size = d => d.val ? size_scale(d.val) * 2 : 10;
 node_colour = d => party_colour(d.party)
 node_label = d => d.name;
-node_title = d => d.description;
+node_title = d => d.name + ': ' + d.description;
 node_fill = d => d.image ? 'url(' + d.image + ')' : 'white';
 link_text = d => d.last_text;
 stroke_width = d => stroke_scale(d.times);
 
-stroke_off_opacity = 0.05;
+stroke_off_opacity = 0.035;
+image_loaded = 0;
+
+link_hover = function(d) { d3.select(this).style('stroke-opacity', 1) }
+link_hover_off = function(d) { d3.select(this).style('stroke-opacity', stroke_off_opacity) }
 
 d3
   .json('mps3.json')
-  .then(graph => {
+  .then(async graph => {
     link_colour = d => party_colour(link_source_node(graph.nodes, d).party);
 
     var g = svg.append("g")
@@ -88,6 +132,10 @@ d3
       		.attr("width", image_size)
           .attr("height", image_size)
           .attr("xlink:href", d => d.image)
+          .on('load', () => image_loaded++)
+
+    await sleep(3000)
+    spinner.stop() // https://stackoverflow.com/a/951057/1876628
 
     var arrows = defs.selectAll("marker") // https://jsfiddle.net/4xt5v51m/3/
             .data(["end"])
@@ -113,6 +161,8 @@ d3
           .style("stroke-opacity", stroke_off_opacity)
           .style("stroke-width", stroke_width)
           .attr("marker-end", "url(#end)")
+          .on('mouseover', link_hover)
+          .on('mouseout', link_hover_off)
 
     link
       .append("title")
@@ -156,18 +206,23 @@ d3
       .on("start", d => {
           if (!d3.event.active) simulation.alphaTarget(0.3).restart();
           d.fx = d.x;
-          d.fy = d.y; })
+          d.fy = d.y;
+          d.fixed = true; }
+        )
       .on("drag", d => {
           d.fx = d3.event.x;
           d.fy = d3.event.y; })
       .on("end", d => {
           if (!d3.event.active) simulation.alphaTarget(0);
-          d.fx = null;
-          d.fy = null;});
+          // d.fx = null;
+          // d.fy = null;
+        });
 
     drag_handler(elem);
 
     tick = () => {
+      for (let i = 0; i < 15; i++) { simulation.tick(); } // https://stackoverflow.com/a/49423603/1876628
+
       elem.attr('transform', d => 'translate(' + d.x + ',' + d.y + ')')
 
       var arrowLength = 2;  // https://stackoverflow.com/a/24313834/1876628
@@ -190,13 +245,13 @@ d3
 
       label
         .attr('x', d => d.x)
-        .attr('y', d => d.y + size_scale(d.val) + 12)
+        .attr('y', d => d.y + size_scale(d.val) + 8)
     }
 
     var simulation = d3.forceSimulation()
     	.nodes(graph.nodes)
       .force('charge_force', d3.forceManyBody().strength(-60))
-      .force('center_force', d3.forceCenter(width / 2, height / 2))
+      .force('center_force', d3.forceCenter((width + about_box_width) / 2, height / 2))
       .force('collision', d3.forceCollide().radius(node_size))
       .force('links', d3.forceLink(graph.links).id(d => d.id))
       .on('tick', tick);
@@ -204,7 +259,8 @@ d3
     var zoom_handler = d3
       .zoom()
       .on("zoom", () => {
-        g.attr("transform", d3.event.transform)
+        g.attr("transform", d3.event.transform);
+        label.style("font-size", 8 / d3.event.transform.k + "px");
       }
     );
 

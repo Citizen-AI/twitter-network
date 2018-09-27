@@ -8,7 +8,11 @@ body {
     </style>
     <!-- <script src="//unpkg.com/three"></script>
     <script src="//unpkg.com/three-spritetext"></script> -->
+    <script src="library.js"></script>
+    <script src="https://d3js.org/d3.v5.min.js"></script>
     <script src="//unpkg.com/3d-force-graph"></script>
+    <!-- <script src="//unpkg.com/three"></script> -->
+    <!-- <script src="//unpkg.com/three-spritetext"></script> -->
   </head>
   <body>
 
@@ -16,34 +20,35 @@ body {
 
     <script>
 
+// TODO: https://github.com/vasturiano/3d-force-graph/blob/master/example/highlight/index.html
+
+stroke_scale = d3.scaleLinear()
+                   .domain([1,60])
+                   .range([1,15])
+
+node_colour = n => party_colour(n.party);
+stroke_width = l => stroke_scale(l.times);
+link_colour = l => party_colour(l.source.party);
+
 const elem = document.getElementById('3d-graph');
 const Graph = ForceGraph3D()(elem)
-  .jsonUrl('../output/us-congress.json')
-  .nodeAutoColorBy('type')
-  .nodeRelSize(2)
-  .nodeLabel(node => `${node.name}: ${node.description}`)
-  .onNodeHover(node => elem.style.cursor = node ? 'pointer' : null)
-  // .linkVisibility(false)
-  .linkOpacity(0.1)
+  .jsonUrl('mps3.json')
+  .nodeColor(node_colour)
+  .nodeOpacity(1)
+  .nodeRelSize(3)
+  .nodeLabel(n => `${n.name}: ${n.description}`)
+  .linkOpacity(0.05)
+  .linkDirectionalArrowLength(4)
+  .linkDirectionalArrowRelPos(1)
+  // .linkColor(link_colour);
+  // .linkWidth(stroke_width);
 
-Graph
-  .d3Force('charge').strength(-250)
 
-Graph
-  .d3Force('link').distance(100)
 
-// https://bl.ocks.org/steveharoz/8c3e2524079a8c440df60c1ab72b5d03
+Graph.d3Force('charge').strength(-100)
+Graph.d3Force('link').distance(250)
+Graph.d3Force('collide', d3.forceCollide(Graph.nodeRelSize()))
 
-  // .nodeThreeObject(node => {
-  //         const sprite = new SpriteText(node.id);
-  //         sprite.color = node.color;
-  //         sprite.textHeight = 8;
-  //         return sprite;
-  //       })
-  // .linkDirectionalArrowLength(3.5)
-  // .linkDirectionalArrowRelPos(1)
-  // .linkCurvature(0.25);
-    // .onNodeClick(node => window.open(`https://bl.ocks.org/${node.user}/${node.id}`, '_blank'));
 
 
     </script>
