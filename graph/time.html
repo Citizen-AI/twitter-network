@@ -2,15 +2,6 @@
 <meta charset="utf-8">
 <html>
   <head>
-    <!-- Global site tag (gtag.js) - Google Analytics -->
-    <script async src="https://www.googletagmanager.com/gtag/js?id=UA-126863351-1"></script>
-    <script>
-      window.dataLayer = window.dataLayer || [];
-      function gtag(){dataLayer.push(arguments);}
-      gtag('js', new Date());
-
-      gtag('config', 'UA-126863351-1');
-    </script>
     <link rel="stylesheet" type="text/css" href="style.css">
     <script src="library.js"></script>
     <script src="https://d3js.org/d3.v5.min.js"></script>
@@ -61,12 +52,11 @@
 // TODO: weight links by 'times'
 // TODO: stop lonely nodes from flying away
 // TODO: highlight attached nodes http://bl.ocks.org/eyaler/10586116
-// TODO: pan http://bl.ocks.org/eyaler/10586116 / https://bl.ocks.org/micahstubbs/6b3eb08318df8d58d5c21dcccf3063f4
+// TODO: max & min zoom
+// TODO: background drag https://bl.ocks.org/micahstubbs/6b3eb08318df8d58d5c21dcccf3063f4
 // TODO: download images
 // TODO: animate links by time
 // TODO: better tooltips http://api.jqueryui.com/tooltip/
-// TODO: handle window resize
-
 
 
 const about_box_width = 242;
@@ -85,7 +75,7 @@ const opts = {
   left: (width + about_box_width) / 2 / width * 100 + '%'
 };
 
-const spinner = new Spinner(opts).spin(document.body);
+// const spinner = new Spinner(opts).spin(document.body);
 
 
 d3.select('body')
@@ -120,10 +110,26 @@ image_loaded = 0;
 
 link_hover = (d, i, nodes) => d3.select(nodes[i]).style('stroke-opacity', 1)
 link_hover_off = (d, i, nodes) => d3.select(nodes[i]).style('stroke-opacity', 0)
+// https://stackoverflow.com/questions/19111581/d3js-force-directed-on-hover-to-node-highlight-colourup-linked-nodes-and-link
+
+
+var simulation = d3.forceSimulation()
+  .force('charge_force', d3.forceManyBody().strength(-60))
+  .force('center_force', d3.forceCenter((width + about_box_width) / 2, height / 2))
+  .force('collision', d3.forceCollide().radius(node_size));
+
 
 d3
   .json('mps3.json')
-  .then(async graph => {
+  .then(async full_graph => {
+    var graph = {nodes: full_graph.nodes};
+    var t = 0;
+
+    simulation
+      .nodes(graph.nodes)
+      .force('links', d3.forceLink(graph.links).id(d => d.id))
+      .on('tick', tick);
+
     link_colour = d => party_colour(link_source(graph.nodes, d).party);
     link_text = l => {
       var source_name = link_source(graph.nodes, l).name;
@@ -131,8 +137,34 @@ d3
       return `${source_name} liked ${target_name}'s tweet: ${l.last_text}`;
     };
 
-    var g = svg.append("g")
-      .attr("class", "everything");
+    var g = svg.append("g").attr("class", "everything");
+    var link = {};
+    link_group = g.append("g").attr("class", "links")
+
+    update = () => {
+      graph.links = full_graph.links.slice(t, t + 100);
+
+      link = link_group.selectAll("line").data(graph.links)
+      link.exit().remove()
+      link.enter().append("line")
+        .style("stroke", link_colour)
+        .style("stroke-opacity", stroke_off_opacity)
+        .style("stroke-width", stroke_width)
+        .attr("marker-end", "url(#end)")
+        .on('mouseover', link_hover)
+        .on('mouseout', link_hover_off)
+
+      link.append("title").text(link_text);
+
+      t+=100;
+      console.log(t);
+
+    }
+    update();
+    d3.interval(update, 3000);
+    // update(full_graph, graph);
+
+
 
     var defs = g.append('defs')
 
@@ -152,8 +184,8 @@ d3
           .attr("xlink:href", d => d.image)
           .on('load', () => image_loaded++)
 
-    await sleep(3000)
-    spinner.stop() // https://stackoverflow.com/a/951057/1876628
+    // await sleep(3000)
+    // spinner.stop() // https://stackoverflow.com/a/951057/1876628
 
     var arrows = defs.selectAll("marker") // https://jsfiddle.net/4xt5v51m/3/
             .data(["end"])
@@ -169,22 +201,9 @@ d3
           .append("svg:path")
             .attr("d", "M0,-5L10,0L0,5");
 
-    var link = g.append("g")
-      .attr("class", "links")
-      .selectAll("line")
-      .data(graph.links)
-      .enter()
-        .append("line")
-          .style("stroke", link_colour)
-          .style("stroke-opacity", stroke_off_opacity)
-          .style("stroke-width", stroke_width)
-          .attr("marker-end", "url(#end)")
-          .on('mouseover', link_hover)
-          .on('mouseout', link_hover_off)
 
-    link
-      .append("title")
-      .text(link_text);
+    node_hover = d => link.style('stroke-opacity', l => (d.id === l.source.id || d.id === l.target.id) ? 1 : stroke_off_opacity)
+    node_hover_off = d => link.transition().delay(2000).duration(2000).style('stroke-opacity', stroke_off_opacity)
 
     var labels_group = g
       .append("g")
@@ -210,12 +229,8 @@ d3
         .style("fill", 'white')
         .style('stroke', node_colour)
         .style('fill', d => 'url(#' + d.id + ')')
-        .on('mouseover', d => {   // https://stackoverflow.com/questions/19111581/d3js-force-directed-on-hover-to-node-highlight-colourup-linked-nodes-and-link
-          link.style('stroke-opacity', l =>
-            (d.id === l.source.id || d.id === l.target.id) ? 1 : stroke_off_opacity)
-          }
-        )
-        .on('mouseout', d => link.style('stroke-opacity', stroke_off_opacity))
+        .on('mouseover', node_hover)
+        .on('mouseout', node_hover_off)
       .append('title').text(node_title);
 
 
@@ -238,8 +253,8 @@ d3
 
     drag_handler(elem);
 
-    tick = () => {
-      for (let i = 0; i < 5; i++) { simulation.tick(); } // https://stackoverflow.com/a/49423603/1876628
+    function tick() {
+      // for (let i = 0; i < 5; i++) { simulation.tick(); } // https://stackoverflow.com/a/49423603/1876628
 
       elem.attr('transform', d => 'translate(' + d.x + ',' + d.y + ')')
 
@@ -266,23 +281,14 @@ d3
         .attr('y', d => d.y + size_scale(d.val) + 8)
     }
 
-    var simulation = d3.forceSimulation()
-    	.nodes(graph.nodes)
-      .force('charge_force', d3.forceManyBody().strength(-60))
-      .force('center_force', d3.forceCenter((width + about_box_width) / 2, height / 2))
-      .force('collision', d3.forceCollide().radius(node_size))
-      .force('links', d3.forceLink(graph.links).id(d => d.id))
-      .on('tick', tick);
 
     var zoom_handler = d3
       .zoom()
       .on("zoom", () => {
         g.attr("transform", d3.event.transform);
-        label
-          .style("font-size", 8 / d3.event.transform.k + "px");
-      })
-      .scaleExtent([0.1,7]);
-
+        label.style("font-size", 8 / d3.event.transform.k + "px");
+      }
+    );
 
     zoom_handler(g);
   });

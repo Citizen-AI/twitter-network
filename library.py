@@ -55,6 +55,7 @@ def csv_to_gsheet(csv_file_names, google_sheet_key):
 
 
 def pd_to_csv(df, filename):
+    print('Writing to', filename)
     df.to_csv(OUTPUT_FOLDER + filename, index=False, encoding='utf8')
 
 

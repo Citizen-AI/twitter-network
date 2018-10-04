@@ -6,27 +6,28 @@ import json
 import connect_to_twitter
 import find_party
 import user_faves
-from library import print_err, csv_to_gsheet
+from library import print_err, csv_to_gsheet, pd_to_csv
 
 
 OUTPUT_FOLDER = 'output/'
 
 
-def list_faves_to_csv(slug, owner_screen_name, csv):
+def list_faves_to_csv(slug, owner_screen_name, out_csv, max_results):
     api = connect_to_twitter.api()
     list_members = api.GetListMembers(slug=slug, owner_screen_name=owner_screen_name)
     for list_member in list_members:
-        user_faves.append_to_csv(list_member.screen_name, OUTPUT_FOLDER + csv)
+        user_faves.append_to_csv(list_member.screen_name, OUTPUT_FOLDER + out_csv, max_results)
 
 
-def list_to_csv(slug, owner_screen_name, csv):
+def list_to_csv(slug, owner_screen_name, out_csv):
+    print('Saving members of', owner_screen_name, '/', slug)
     api = connect_to_twitter.api()
     list_members = api.GetListMembers(slug=slug, owner_screen_name=owner_screen_name)
     list_members_df = pd.DataFrame()
     for person in list_members:
         data = {'label':person.screen_name, 'name':person.name, 'description':person.description}
         list_members_df = list_members_df.append(data, ignore_index=True)
-    list_members_df.to_csv(OUTPUT_FOLDER + csv, index=False, encoding='utf8')
+    pd_to_csv(df=list_members_df, filename=out_csv)
 
 
 def faves_to_network(faves_csv, network_csv):
@@ -35,17 +36,15 @@ def faves_to_network(faves_csv, network_csv):
     network = faves.pivot_table(index=['from','to'], values=['text'], aggfunc={'to':'count','text':'last'})
     network.columns=['last_text','times']
     network.reset_index(level=['from','to'], inplace=True)
-    print('Writing to', network_csv)
-    network.to_csv(OUTPUT_FOLDER + network_csv, index=False, encoding='utf8')
+    pd_to_csv(df=network, filename=network_csv)
 
 
 def network_to_people(network_csv, people_csv):
     network = pd.read_csv(OUTPUT_FOLDER + network_csv)
-    people = network.pivot_table(index=['to'], values=['from','last_text'], aggfunc={'from':'count'})
+    people = network.pivot_table(index=['to'], aggfunc={'from':'count'})
     people.reset_index(level=['to'], inplace=True)
     people.columns = ['label','favees']
-    print('Writing to', people_csv)
-    people.to_csv(OUTPUT_FOLDER + people_csv, index=False, encoding='utf8')
+    pd_to_csv(df=people, filename=people_csv)
 
 
 def remove_unpopular_people(in_people_csv, in_network_csv, out_people_csv, out_network_csv, minimum_favees=1):
@@ -54,10 +53,10 @@ def remove_unpopular_people(in_people_csv, in_network_csv, out_people_csv, out_n
     network = pd.read_csv(OUTPUT_FOLDER + in_network_csv)
     popular_people = people.loc[people['favees'] >= minimum_favees]
     network = network.loc[network['to'].isin(popular_people['label'])]
-    popular_people.to_csv(OUTPUT_FOLDER + out_people_csv, index=False, encoding='utf8')
-    network.to_csv(OUTPUT_FOLDER + out_network_csv, index=False, encoding='utf8')
+    pd_to_csv(df=popular_people, filename=out_people_csv)
+    pd_to_csv(df=network, filename=out_network_csv)
 
-
+# TODO: append as we go
 def populate_profiles(people_csv):
     people = pd.read_csv(OUTPUT_FOLDER + people_csv)
     api = connect_to_twitter.api()
@@ -78,26 +77,27 @@ def populate_profiles(people_csv):
     people.to_csv(OUTPUT_FOLDER + people_csv, index=False, encoding='utf8')
 
 
-def add_party_to_list(list_csv, country='us'):
-    """Looks for US political party affiliation"""
-    list = pd.read_csv(OUTPUT_FOLDER + list_csv)
-    for index in list.index:
-        name = list.at[index, 'name']
-        description = list.at[index, 'description']
+def add_party_to_list(csv, country='us'):
+    """Looks for political party affiliation"""
+    list_members = pd.read_csv(OUTPUT_FOLDER + csv)
+    for index in list_members.index:
+        name = list_members.at[index, 'name']
+        description = list_members.at[index, 'description']
         party = find_party.search(description, country) or \
                 find_party.search(name, country) or \
                 find_party.knowledge_graph_get_party(name, country)
         print(name, ',', party)
         if party:
-            list.at[index, 'party'] = party
-    list.to_csv(OUTPUT_FOLDER + list_csv, index=False, encoding='utf8')
+            list_members.at[index, 'party'] = party
+    pd_to_csv(df=list_members, filename=csv)
 
 
 def merge_people(csv1, csv2, output_csv):
     df1 = pd.read_csv(OUTPUT_FOLDER + csv1)
     df2 = pd.read_csv(OUTPUT_FOLDER + csv2)
-    merged = pd.merge(df1, df2, on=['label','name','description', 'party'], how='outer')
-    merged.to_csv(OUTPUT_FOLDER + output_csv, index=False, encoding='utf8')
+    merged = pd.merge(df1, df2, how='outer')
+    # merged = pd.merge(df1, df2, on=['label','name','description', 'party'], how='outer')
+    pd_to_csv(df=merged, filename=output_csv)
 
 
 def csvs_to_force_graph_json(nodes_csv, links_csv, output_json):

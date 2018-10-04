@@ -6,23 +6,29 @@ import os
 import connect_to_twitter
 from library import print_err
 
-def get(screen_name):
+def get(screen_name, max_results=100):
     api = connect_to_twitter.api()
 
     faved_tweets = pd.DataFrame()
     collecting_is_done = False
-    max_results = 100
     results_count = 0
     last_id = None
 
     while (collecting_is_done is False):
         print('Getting favorites for', screen_name)
         try:
-            favorites = api.GetFavorites(screen_name=screen_name, count=200, max_id=last_id)
+            favorites = api.GetFavorites(screen_name=screen_name, count=max_results, max_id=last_id)
             faved_tweets_batch = []
             for favorite in favorites:
-                faved_tweets_batch.append([screen_name, favorite.user.screen_name, favorite.text])
-            faved_tweets = faved_tweets.append(pd.DataFrame(faved_tweets_batch, columns=['from','to','text']), ignore_index=True)
+                faved_tweets_batch.append([screen_name,
+                                           favorite.user.screen_name,
+                                           favorite.text,
+                                           favorite.id,
+                                           favorite.created_at])
+            faved_tweets = faved_tweets.append(
+                pd.DataFrame(faved_tweets_batch, columns=['from','to','text', 'id', 'created_at']),
+                ignore_index=True
+            )
 
             print('Found', len(favorites))
             results_count += len(favorites)
@@ -37,8 +43,8 @@ def get(screen_name):
     return faved_tweets
 
 
-def append_to_csv(screen_name, file_name):
-    faves = get(screen_name)
+def append_to_csv(screen_name, file_name, max_results):
+    faves = get(screen_name, max_results)
 
     if os.path.exists(file_name):
         print('Appending to existing', file_name)

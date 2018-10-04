@@ -16,8 +16,10 @@ if len(sys.argv) < 2:
 recipe_file = sys.argv[1]
 with open(recipe_file) as recipe:
     for line in recipe:
-        if not line.startswith('#'):
+        if not line.lstrip().startswith('#'):
             eval(line)
 
 
 # TODO: Can we get more of long tweets?
+# TODO: geolocation on knowledge_graph_get_party?
+# TODO: generalise network_to_people
