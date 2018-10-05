@@ -2,6 +2,10 @@ body {
   margin: 0;
   background: white; }
 
+svg {
+  cursor: grab;
+}
+
 .links line,
 .links path {
   stroke: #999;
@@ -15,6 +19,8 @@ body {
 }
 .nodes circle:hover {
   stroke: white ! important;
+  stroke-width: 1px ! important;
+  vector-effect: non-scaling-stroke ! important;
 }
 
 

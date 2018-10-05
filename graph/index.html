@@ -40,13 +40,13 @@
       <p>Hover over people to see their connections. Hover over connections to
         see the last tweet liked. Drag people around to rearrange.
         Connections grow thicker with the number of tweets liked. Pinch or scroll
-        to zoom People with fewer than three favourited tweets have been hidden
+        to zoom. People with fewer than three favourited tweets have been hidden
         to simplify the chart.</p>
 
       <p>This is a work in progress by <a href="https://twitter.com/citizenai_nz">@citizenai</a>.
         Interpretations, suggestions, bug reports, etc most welcome. Many bugs
         remain! Code available on <a href="https://github.com/Citizen-AI/twitter-network">GitHub</a>.
-        Version 0.3.8. <nobr>License: <a href="https://creativecommons.org/licenses/by/3.0/nz/">CC BY 3.0 NZ</a></nobr></p>
+        Version 0.3.9. <nobr>License: <a href="https://creativecommons.org/licenses/by/3.0/nz/">CC BY 3.0 NZ</a></nobr></p>
 
     </div>
   </body>
@@ -61,10 +61,9 @@
 // TODO: weight links by 'times'
 // TODO: stop lonely nodes from flying away
 // TODO: highlight attached nodes http://bl.ocks.org/eyaler/10586116
-// TODO: pan http://bl.ocks.org/eyaler/10586116 / https://bl.ocks.org/micahstubbs/6b3eb08318df8d58d5c21dcccf3063f4
 // TODO: animate links by time
 // TODO: better tooltips http://api.jqueryui.com/tooltip/
-// TODO: handle window resize
+// TODO: handle window resize https://stackoverflow.com/questions/16265123/resize-svg-when-window-is-resized-in-d3-js
 // TODO: download low res images
 
 
@@ -137,26 +136,23 @@ d3
       return `${source_name} liked ${target_name}'s tweet: ${l.last_text}`;
     };
 
-    var g = svg.append("g")
-      .attr("class", "everything");
-
-    var defs = g.append('defs')
-
-    var imgPattern = defs.selectAll("pattern")
-      .data(graph.nodes)
-    	.enter()
-        .append("pattern")
-          .attr("id", d => d.id)
-          .attr("width", 1)
-          .attr("height", 1)
-          .attr("patternUnits", "objectBoundingBox")
-      	.append("image")
-      		.attr("x", 0)
-      		.attr("y", 0)
-      		.attr("width", image_size)
-          .attr("height", image_size)
-          .attr("xlink:href", node_image)
-          .on('load', () => image_loaded++)
+    var g = svg.append("g").attr("class", "everything"),
+        defs = g.append('defs'),
+        imgPattern = defs.selectAll("pattern")
+          .data(graph.nodes)
+        	.enter()
+            .append("pattern")
+              .attr("id", d => d.id)
+              .attr("width", 1)
+              .attr("height", 1)
+              .attr("patternUnits", "objectBoundingBox")
+          	.append("image")
+          		.attr("x", 0)
+          		.attr("y", 0)
+          		.attr("width", image_size)
+              .attr("height", image_size)
+              .attr("xlink:href", node_image)
+              .on('load', () => image_loaded++)
 
     // await sleep(3000)
     // spinner.stop() // https://stackoverflow.com/a/951057/1876628
@@ -212,8 +208,8 @@ d3
 
     var circle = elem
       .append('circle')
-        .attr("r", node_size)
-        .style("fill", 'white')
+        .attr('r', node_size)
+        .style('fill', 'white')
         .style('stroke', node_colour)
         .style('fill', d => 'url(#' + d.id + ')')
         .on('mouseover', d => {   // https://stackoverflow.com/questions/19111581/d3js-force-directed-on-hover-to-node-highlight-colourup-linked-nodes-and-link
@@ -227,20 +223,16 @@ d3
 
 
     var drag_handler = d3.drag()
-      .on("start", d => {
+      .on('start', d => {
           if (!d3.event.active) simulation.alphaTarget(0.3).restart();
           d.fx = d.x;
           d.fy = d.y;
           d.fixed = true; }
         )
-      .on("drag", d => {
+      .on('drag', d => {
           d.fx = d3.event.x;
           d.fy = d3.event.y; })
-      .on("end", d => {
-          if (!d3.event.active) simulation.alphaTarget(0);
-          // d.fx = null;
-          // d.fy = null;
-        });
+      .on('end', d => { if (!d3.event.active) simulation.alphaTarget(0); });
 
     drag_handler(elem);
 
@@ -269,7 +261,7 @@ d3
 
       label
         .attr('x', d => d.x)
-        .attr('y', d => d.y + size_scale(d.val) + 8)
+        .attr('y', d => d.y + size_scale(d.val) + 10)
     }
 
     var simulation = d3.forceSimulation()
@@ -282,15 +274,14 @@ d3
 
     var zoom_handler = d3
       .zoom()
-      .on("zoom", () => {
-        g.attr("transform", d3.event.transform);
-        label
-          .style("font-size", 8 / d3.event.transform.k + "px");
+      .on('zoom', () => {
+        g.attr('transform', d3.event.transform);
+        label.style('font-size', 8 / d3.event.transform.k + "px");
+        label.attr('y', d => d.y + size_scale(d.val) + (10 / d3.event.transform.k))
       })
       .scaleExtent([0.1,7]);
 
-
-    zoom_handler(g);
+    zoom_handler(svg);
   });
 
   </script>
