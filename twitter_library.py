@@ -147,7 +147,7 @@ def download_images(csv, folder='', column='image', start=0):
             url_stub = re.search(r'(.+)_normal\.(jpe?g|png|gif)', url, re.I)[1]
             filename_stub = re.search(r'.+/(.+)_normal\.(jpe?g|png|gif)', url, re.I)[1]
             filetype = re.search(r'(.+)_normal\.(jpe?g|png|gif)', url, re.I)[2]
-            highres_url = url_stub + '_400x400.' + filetype
+            highres_url = url_stub + '_200x200.' + filetype
             filename = filename_stub + '.' + filetype
             r = requests.get(highres_url, allow_redirects=True)
             print('Writing', filename)

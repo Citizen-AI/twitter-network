@@ -46,7 +46,7 @@
       <p>This is a work in progress by <a href="https://twitter.com/citizenai_nz">@citizenai</a>.
         Interpretations, suggestions, bug reports, etc most welcome. Many bugs
         remain! Code available on <a href="https://github.com/Citizen-AI/twitter-network">GitHub</a>.
-        Version 0.3.7. <nobr>License: <a href="https://creativecommons.org/licenses/by/3.0/nz/">CC BY 3.0 NZ</a></nobr></p>
+        Version 0.3.8. <nobr>License: <a href="https://creativecommons.org/licenses/by/3.0/nz/">CC BY 3.0 NZ</a></nobr></p>
 
     </div>
   </body>
@@ -65,6 +65,7 @@
 // TODO: animate links by time
 // TODO: better tooltips http://api.jqueryui.com/tooltip/
 // TODO: handle window resize
+// TODO: download low res images
 
 
 
@@ -108,11 +109,13 @@ link_target = (nodes, link) => nodes.find(n => n.id === link.target)
 
 imagefile_from_url = (url) => {
   bits = url.match(/.+\/(.+)_normal(\..+)/);
-  return bits ? '../output/images/' + bits[1] + bits[2] : null;
+  return bits ? 'images/' + bits[1] + bits[2] : null;
 }
 
 node_size = d => d.val ? size_scale(d.val) : 5;
 image_size = d => d.val ? size_scale(d.val) * 2 : 10;
+node_image = d => d.image;
+// node_image = d => imagefile_from_url(d.image);
 node_colour = d => party_colour(d.party)
 node_label = d => d.name;
 node_title = d => d.name + ': ' + d.description;
@@ -152,7 +155,7 @@ d3
       		.attr("y", 0)
       		.attr("width", image_size)
           .attr("height", image_size)
-          .attr("xlink:href", d => imagefile_from_url(d.image))
+          .attr("xlink:href", node_image)
           .on('load', () => image_loaded++)
 
     // await sleep(3000)
