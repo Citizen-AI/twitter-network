@@ -3,3 +3,4 @@
 *.json
 .DS_Store
 *.pyc
+output/*

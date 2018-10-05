@@ -2,6 +2,8 @@
 
 import pandas as pd
 import json
+import requests
+import re
 
 import connect_to_twitter
 import find_party
@@ -135,3 +137,20 @@ def csvs_to_force_graph_json(nodes_csv, links_csv, output_json):
 #
 #     print('Writing to CSV')
 #     people.to_csv('people-in-network.csv', index=False, encoding='utf8')
+
+
+def download_images(csv, folder='', column='image', start=0):
+    df = pd.read_csv(OUTPUT_FOLDER + csv)
+    for url in df[column][start:]:
+        try:
+            print(url)
+            url_stub = re.search(r'(.+)_normal\.(jpe?g|png|gif)', url, re.I)[1]
+            filename_stub = re.search(r'.+/(.+)_normal\.(jpe?g|png|gif)', url, re.I)[1]
+            filetype = re.search(r'(.+)_normal\.(jpe?g|png|gif)', url, re.I)[2]
+            highres_url = url_stub + '_400x400.' + filetype
+            filename = filename_stub + '.' + filetype
+            r = requests.get(highres_url, allow_redirects=True)
+            print('Writing', filename)
+            open(OUTPUT_FOLDER + folder + filename, 'wb').write(r.content)
+        except:
+            print('Skipping', url)

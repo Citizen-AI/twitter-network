@@ -5,7 +5,7 @@ import sys
 from twitter_library import list_faves_to_csv, list_to_csv, faves_to_network, \
                             network_to_people, remove_unpopular_people, \
                             populate_profiles, add_party_to_list, merge_people, \
-                            csvs_to_force_graph_json
+                            csvs_to_force_graph_json, download_images
 from library import csv_to_gsheet
 
 

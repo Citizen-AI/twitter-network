@@ -10,5 +10,6 @@
                         # minimum_favees=3)
 # merge_people(csv1='mps.csv', csv2='mps-people.csv', output_csv='mps-people-plus-mps.csv')
 # populate_profiles(people_csv='mps-people-plus-mps.csv')
-csvs_to_force_graph_json(nodes_csv='mps-people-plus-mps.csv', links_csv='mps-faves-over-time.csv', output_json='../graph/mps-over-time.json')
+# csvs_to_force_graph_json(nodes_csv='mps-people-plus-mps.csv', links_csv='mps-faves-over-time.csv', output_json='../graph/mps-over-time.json')
 # # csv_to_gsheet(['us-congress-people-with-party.csv'], '19u2ujgL9PffltGOGnz9lfvi9sKXekkjsvibIuq6PTbg')
+download_images(csv='mps-people-plus-mps.csv', folder='images/', start=1063)

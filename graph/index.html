@@ -46,7 +46,7 @@
       <p>This is a work in progress by <a href="https://twitter.com/citizenai_nz">@citizenai</a>.
         Interpretations, suggestions, bug reports, etc most welcome. Many bugs
         remain! Code available on <a href="https://github.com/Citizen-AI/twitter-network">GitHub</a>.
-        Version 0.3.5. <nobr>License: <a href="https://creativecommons.org/licenses/by/3.0/nz/">CC BY 3.0 NZ</a></nobr></p>
+        Version 0.3.7. <nobr>License: <a href="https://creativecommons.org/licenses/by/3.0/nz/">CC BY 3.0 NZ</a></nobr></p>
 
     </div>
   </body>
@@ -62,7 +62,6 @@
 // TODO: stop lonely nodes from flying away
 // TODO: highlight attached nodes http://bl.ocks.org/eyaler/10586116
 // TODO: pan http://bl.ocks.org/eyaler/10586116 / https://bl.ocks.org/micahstubbs/6b3eb08318df8d58d5c21dcccf3063f4
-// TODO: download images
 // TODO: animate links by time
 // TODO: better tooltips http://api.jqueryui.com/tooltip/
 // TODO: handle window resize
@@ -73,19 +72,19 @@ const about_box_width = 242;
 var width = window.innerWidth;
 var height = window.innerHeight;
 
-const opts = {
-  lines: 20,
-  length: 0,
-  width: 3,
-  radius: 45,
-  color: '#000',
-  speed: 0.5,
-  trail: 40,
-  className: 'spinner',
-  left: (width + about_box_width) / 2 / width * 100 + '%'
-};
-
-const spinner = new Spinner(opts).spin(document.body);
+// const opts = {
+//   lines: 20,
+//   length: 0,
+//   width: 3,
+//   radius: 45,
+//   color: '#000',
+//   speed: 0.5,
+//   trail: 40,
+//   className: 'spinner',
+//   left: (width + about_box_width) / 2 / width * 100 + '%'
+// };
+//
+// const spinner = new Spinner(opts).spin(document.body);
 
 
 d3.select('body')
@@ -107,12 +106,16 @@ stroke_scale = d3.scaleLinear()
 link_source = (nodes, link) => nodes.find(n => n.id === link.source)
 link_target = (nodes, link) => nodes.find(n => n.id === link.target)
 
+imagefile_from_url = (url) => {
+  bits = url.match(/.+\/(.+)_normal(\..+)/);
+  return bits ? '../output/images/' + bits[1] + bits[2] : null;
+}
+
 node_size = d => d.val ? size_scale(d.val) : 5;
 image_size = d => d.val ? size_scale(d.val) * 2 : 10;
 node_colour = d => party_colour(d.party)
 node_label = d => d.name;
 node_title = d => d.name + ': ' + d.description;
-node_fill = d => d.image ? 'url(' + d.image + ')' : 'white';
 stroke_width = d => stroke_scale(d.times);
 
 stroke_off_opacity = 0.035;
@@ -149,11 +152,11 @@ d3
       		.attr("y", 0)
       		.attr("width", image_size)
           .attr("height", image_size)
-          .attr("xlink:href", d => d.image)
+          .attr("xlink:href", d => imagefile_from_url(d.image))
           .on('load', () => image_loaded++)
 
-    await sleep(3000)
-    spinner.stop() // https://stackoverflow.com/a/951057/1876628
+    // await sleep(3000)
+    // spinner.stop() // https://stackoverflow.com/a/951057/1876628
 
     var arrows = defs.selectAll("marker") // https://jsfiddle.net/4xt5v51m/3/
             .data(["end"])
