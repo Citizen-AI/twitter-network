@@ -48,7 +48,7 @@
       <p>This is a work in progress by <a href="https://twitter.com/citizenai_nz">@citizenai</a>.
         Interpretations, suggestions, bug reports, etc most welcome. Many bugs
         remain! Code available on <a href="https://github.com/Citizen-AI/twitter-network">GitHub</a>.
-        Version 0.4.0. <nobr>License: <a href="https://creativecommons.org/licenses/by/3.0/nz/">CC BY 3.0 NZ</a></nobr></p>
+        Version 0.4.1. <nobr>License: <a href="https://creativecommons.org/licenses/by/3.0/nz/">CC BY 3.0 NZ</a></nobr></p>
 
     </div>
   </body>
@@ -81,49 +81,49 @@ d3.select('body')
   .attr("width", width)
   .attr("height", height);
 
-var svg = d3.select("svg");
+const svg = d3.select("svg"),
+      size_scale = d3.scalePow().exponent(0.5).domain([0, 100]).range([1,30]),
+      stroke_scale = d3.scaleLinear().domain([1,60]).range([1,15]);
 
-size_scale = d3.scalePow()
-                  .exponent(0.5)
-                  .domain([0, 100])
-                  .range([1,30])
-stroke_scale = d3.scaleLinear()
-                   .domain([1,60])
-                   .range([1,15])
+const link_hover = (d, i, nodes) => d3.select(nodes[i]).style('stroke-opacity', 1),
+      link_hover_off = (d, i, nodes) => d3.select(nodes[i]).style('stroke-opacity', 0),
+      link_colour = l => party_colour(l.source.party),
+      link_text = l => `${l.source.name} liked ${l.target.name}'s tweet: ${l.last_text}`,
+      imagefile_from_url = (url) => {
+        bits = url.match(/.+\/(.+)_normal(\..+)/);
+        return bits ? 'images/' + bits[1] + bits[2] : null;
+      }
+
+const node_size = d => d.val ? size_scale(d.val) : 5,
+      image_size = d => d.val ? size_scale(d.val) * 2 : 10,
+      node_image = d => d.image,
+      // node_image = d => imagefile_from_url(d.image),
+      node_colour = d => party_colour(d.party),
+      node_label = d => d.name,
+      node_title = d => d.name + ': ' + d.description,
+      stroke_width = d => stroke_scale(d.times);
+
+const stroke_off_opacity = 0.035;
+var image_loaded = 0;
 
 
-link_source = (nodes, link) => nodes.find(n => n.id === link.source)
-link_target = (nodes, link) => nodes.find(n => n.id === link.target)
-
-imagefile_from_url = (url) => {
-  bits = url.match(/.+\/(.+)_normal(\..+)/);
-  return bits ? 'images/' + bits[1] + bits[2] : null;
-}
-
-node_size = d => d.val ? size_scale(d.val) : 5;
-image_size = d => d.val ? size_scale(d.val) * 2 : 10;
-node_image = d => d.image;
-// node_image = d => imagefile_from_url(d.image);
-node_colour = d => party_colour(d.party)
-node_label = d => d.name;
-node_title = d => d.name + ': ' + d.description;
-stroke_width = d => stroke_scale(d.times);
-
-stroke_off_opacity = 0.035;
-image_loaded = 0;
-
-link_hover = (d, i, nodes) => d3.select(nodes[i]).style('stroke-opacity', 1)
-link_hover_off = (d, i, nodes) => d3.select(nodes[i]).style('stroke-opacity', 0)
+var simulation = d3.forceSimulation()
+  .force('charge_force', d3.forceManyBody().strength(-60))
+  .force('center_force', d3.forceCenter(width / 2, height / 2))
+  .force('collision', d3.forceCollide().radius(node_size));
 
 d3
   .json('mps3.json')
-  .then(async graph => {
-    link_colour = d => party_colour(link_source(graph.nodes, d).party);
-    link_text = l => {
-      var source_name = link_source(graph.nodes, l).name;
-      var target_name = link_target(graph.nodes, l).name;
-      return `${source_name} liked ${target_name}'s tweet: ${l.last_text}`;
-    };
+  .then(full_graph => {
+    graph = {
+      nodes: full_graph.nodes,
+      links: full_graph.links
+    }
+
+    simulation
+      .nodes(graph.nodes)
+      .force('links', d3.forceLink(graph.links).id(d => d.id))
+      .on('tick', tick);
 
     var g = svg.append("g").attr("class", "everything"),
         defs = g.append('defs'),
@@ -206,8 +206,6 @@ d3
         .on('mouseout', d => link.style('stroke-opacity', stroke_off_opacity))
       .append('title').text(node_title);
 
-
-
     var drag_handler = d3.drag()
       .on('start', d => {
           if (!d3.event.active) simulation.alphaTarget(0.3).restart();
@@ -222,7 +220,7 @@ d3
 
     drag_handler(elem);
 
-    tick = () => {
+    function tick() {
       for (let i = 0; i < 5; i++) { simulation.tick(); } // https://stackoverflow.com/a/49423603/1876628
 
       elem.attr('transform', d => 'translate(' + d.x + ',' + d.y + ')')
@@ -250,14 +248,6 @@ d3
         .attr('y', d => d.y + size_scale(d.val) + 10)
     }
 
-    var simulation = d3.forceSimulation()
-    	.nodes(graph.nodes)
-      .force('charge_force', d3.forceManyBody().strength(-60))
-      .force('center_force', d3.forceCenter(width / 2, height / 2))
-      .force('collision', d3.forceCollide().radius(node_size))
-      .force('links', d3.forceLink(graph.links).id(d => d.id))
-      .on('tick', tick);
-
     var zoom_handler = d3
       .zoom()
       .on('zoom', () => {
@@ -273,11 +263,8 @@ d3
       width = window.innerWidth;
       height = window.innerHeight;
       svg.attr('width', width).attr('height', height);
-
-
       simulation.force('center_force', d3.forceCenter(width / 2, height / 2));
       simulation.alpha(0.3).restart();
-
     });
   });
 
