@@ -26,7 +26,9 @@
     <link rel="icon" type="image/png" href="network-nodes-144-170805.png">
   </head>
   <body>
+    <button class="info_button"><img src="icons8-info-50.png" /></button>
     <div class="about">
+      <button class="close_button">&times;</button>
       <h1>Whose tweets do <nobr>New Zealand</nobr> MPs like?</h1>
 
       <p>We were interested to see who our MPs are paying attention to; and
@@ -71,7 +73,8 @@ const about_box_width = 242;
 var width = window.innerWidth;
 var height = window.innerHeight;
 
-
+d3.select('.info_button').on('click', () => d3.select('.about').style('display','block'));
+d3.select('.close_button').on('click', () => d3.select('.about').style('display', 'none'));
 
 d3.select('body')
   .append("svg")

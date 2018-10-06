@@ -64,3 +64,27 @@ div.about a:hover,
 div.about a:active {
   color: black;
 }
+
+.info_button {
+  display: none;
+  position: absolute;
+  padding: 10px;
+  background-color: white;
+}
+.info_button img {
+  width: 30px;
+  height: 30px;
+}
+.close_button {
+  display: none;
+  position: absolute;
+  right: 0;
+  font-size: 20px;
+}
+
+@media only screen and (min-device-width : 320px) and (max-device-width : 480px) {
+  div.about { display: none; }
+
+  .info_button,
+  .close_button { display: block; }
+}

@@ -1,7 +1,7 @@
 .env
 *.csv
-*.json
 .DS_Store
 *.pyc
 output/*
 graph/images/*
+gdrivekeyfile.json
