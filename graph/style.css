@@ -10,6 +10,7 @@ svg {
 .links path {
   stroke: #999;
   vector-effect: non-scaling-stroke;
+  cursor: help;
 }
 
 .nodes circle {
@@ -43,7 +44,7 @@ div.about {
   padding: 2px 10px 10px;
   width: 17em;
   font-family: sans-serif;
-  background-color: white;
+  background-color: rgba(255, 255, 255, 0.9);
   /* z-index: -1; */
 }
 div.about h1 {
@@ -69,7 +70,7 @@ div.about a:active {
   display: none;
   position: absolute;
   padding: 10px;
-  background-color: white;
+  background-color: rgba(255, 255, 255, 0.9);
 }
 .info_button img {
   width: 30px;
