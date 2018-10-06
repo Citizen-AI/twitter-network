@@ -42,13 +42,13 @@
       <p>Hover over people to see their connections. Hover over connections to
         see the last tweet liked. Drag people around to rearrange.
         Connections grow thicker with the number of tweets liked. Pinch or scroll
-        to zoom. People with fewer than <strong>six</strong> favourited tweets
+        to zoom. People with fewer than <strong>eight</strong> favourited tweets
         have been hidden to simplify the chart.</p>
 
       <p>This is a work in progress by <a href="https://twitter.com/citizenai_nz">@citizenai</a>.
         Interpretations, suggestions, bug reports, etc most welcome. Code
         available on <a href="https://github.com/Citizen-AI/twitter-network">GitHub</a>.
-        Version 0.4.2. <nobr>License: <a href="https://creativecommons.org/licenses/by/3.0/nz/">CC BY 3.0 NZ</a></nobr></p>
+        Version 0.4.3. <nobr>License: <a href="https://creativecommons.org/licenses/by/3.0/nz/">CC BY 3.0 NZ</a></nobr></p>
 
     </div>
   </body>
@@ -118,7 +118,7 @@ d3
     full_graph.nodes = full_graph.nodes.map(n => { n.val = +n.val; return n });
 
     graph = {};
-    graph.nodes = full_graph.nodes.filter(n => n.val > 6);  // only influential people
+    graph.nodes = full_graph.nodes.filter(n => n.val === 0 || n.val > 8);  // only influential people
     graph.links = full_graph.links.filter(l =>              // only links to now existing nodes
       graph.nodes.filter(n => l.source === n.id).length && graph.nodes.filter(n => l.target === n.id).length
     );
