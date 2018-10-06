@@ -38,10 +38,12 @@ text {
 
 div.about {
   position: absolute;
-  left: 10px;
-  top: 10px;
+  left: 0px;
+  top: 0px;
+  padding: 2px 10px 10px;
   width: 17em;
   font-family: sans-serif;
+  background-color: white;
   /* z-index: -1; */
 }
 div.about h1 {

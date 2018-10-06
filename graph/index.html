@@ -46,7 +46,7 @@
       <p>This is a work in progress by <a href="https://twitter.com/citizenai_nz">@citizenai</a>.
         Interpretations, suggestions, bug reports, etc most welcome. Many bugs
         remain! Code available on <a href="https://github.com/Citizen-AI/twitter-network">GitHub</a>.
-        Version 0.3.9. <nobr>License: <a href="https://creativecommons.org/licenses/by/3.0/nz/">CC BY 3.0 NZ</a></nobr></p>
+        Version 0.4.0. <nobr>License: <a href="https://creativecommons.org/licenses/by/3.0/nz/">CC BY 3.0 NZ</a></nobr></p>
 
     </div>
   </body>
@@ -63,7 +63,6 @@
 // TODO: highlight attached nodes http://bl.ocks.org/eyaler/10586116
 // TODO: animate links by time
 // TODO: better tooltips http://api.jqueryui.com/tooltip/
-// TODO: handle window resize https://stackoverflow.com/questions/16265123/resize-svg-when-window-is-resized-in-d3-js
 // TODO: download low res images
 
 
@@ -72,19 +71,6 @@ const about_box_width = 242;
 var width = window.innerWidth;
 var height = window.innerHeight;
 
-// const opts = {
-//   lines: 20,
-//   length: 0,
-//   width: 3,
-//   radius: 45,
-//   color: '#000',
-//   speed: 0.5,
-//   trail: 40,
-//   className: 'spinner',
-//   left: (width + about_box_width) / 2 / width * 100 + '%'
-// };
-//
-// const spinner = new Spinner(opts).spin(document.body);
 
 
 d3.select('body')
@@ -153,9 +139,6 @@ d3
               .attr("height", image_size)
               .attr("xlink:href", node_image)
               .on('load', () => image_loaded++)
-
-    // await sleep(3000)
-    // spinner.stop() // https://stackoverflow.com/a/951057/1876628
 
     var arrows = defs.selectAll("marker") // https://jsfiddle.net/4xt5v51m/3/
             .data(["end"])
@@ -267,7 +250,7 @@ d3
     var simulation = d3.forceSimulation()
     	.nodes(graph.nodes)
       .force('charge_force', d3.forceManyBody().strength(-60))
-      .force('center_force', d3.forceCenter((width + about_box_width) / 2, height / 2))
+      .force('center_force', d3.forceCenter(width / 2, height / 2))
       .force('collision', d3.forceCollide().radius(node_size))
       .force('links', d3.forceLink(graph.links).id(d => d.id))
       .on('tick', tick);
@@ -282,6 +265,17 @@ d3
       .scaleExtent([0.1,7]);
 
     zoom_handler(svg);
+
+    window.addEventListener('resize', () => {
+      width = window.innerWidth;
+      height = window.innerHeight;
+      svg.attr('width', width).attr('height', height);
+
+
+      simulation.force('center_force', d3.forceCenter(width / 2, height / 2));
+      simulation.alpha(0.3).restart();
+
+    });
   });
 
   </script>
