@@ -41,34 +41,39 @@ div.about {
   position: absolute;
   left: 0px;
   top: 0px;
-  padding: 2px 10px 10px;
-  width: 17em;
+  width: 25em;
   font-family: sans-serif;
-  background-color: rgba(255, 255, 255, 0.9);
-  /* z-index: -1; */
+  background-color: white;
+  border-right: 1px solid #aaa;
+  border-bottom: 1px solid #aaa;
+  height: 100%;
+  overflow-x: scroll;
 }
 div.about h1 {
-  font-size: 1.5em;
+  font-size: 1.8em;
   color: #888;
 }
 div.about p {
   margin: 0 0 0.5em;
   line-height: 150%;
-  font-size: 0.75em;
-  color: #777;
+  color: #444;
 }
 div.about a:link,
 div.about a:visited {
-  color: #555;
+  color: #44a;
 }
 div.about a:hover,
 div.about a:active {
   color: black;
 }
 
+div.content {
+  margin: 1em;
+}
+
 .info_button {
-  display: none;
   position: absolute;
+  top: 0; left: 0;
   padding: 10px;
   background-color: rgba(255, 255, 255, 0.9);
 }
@@ -77,15 +82,16 @@ div.about a:active {
   height: 30px;
 }
 .close_button {
-  display: none;
   position: absolute;
-  right: 0;
+  right: 1em;
   font-size: 20px;
 }
 
 @media only screen and (min-device-width : 320px) and (max-device-width : 480px) {
-  div.about { display: none; }
+  div.about {
+    display: none;
+    width: 100%;}
 
-  .info_button,
-  .close_button { display: block; }
+  /* .info_button,
+  .close_button { display: block; } */
 }

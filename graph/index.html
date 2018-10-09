@@ -28,32 +28,34 @@
   <body>
     <button class="info_button"><img src="icons8-info-50.png" /></button>
     <div class="about">
-      <button class="close_button">&times;</button>
-      <h1>Whose tweets do <nobr>New Zealand</nobr> MPs like?</h1>
+      <div class="content">
+        <button class="close_button">&times;</button>
+        <h1>Whose tweets do <nobr>New Zealand</nobr> MPs like?</h1>
 
-      <p>We were interested to see who our MPs are paying attention to; and
-        whether there is much bipartisanship evident. <strong>What do you see
-          in it?</strong></p>
+        <p>We were interested to see who our MPs are paying attention to; and
+          whether there is much bipartisanship evident. <strong>What do you see
+            in it?</strong></p>
 
-      <p>Connections show likes. People's photos grow in proportion to the number
-        of MPs who've liked their tweets. MPs are coloured by political party where
-        that was easy to deduce from their Twitter bios.
+        <p>Connections show likes. People's photos grow in proportion to the number
+          of MPs who've liked their tweets. MPs are coloured by political party where
+          that was easy to deduce from their Twitter bios.
 
-      <p>Hover over people to see their connections. Hover over connections to
-        see the last tweet liked. Drag people around to rearrange.
-        Connections grow thicker with the number of tweets liked. Pinch or scroll
-        to zoom. People with fewer than <strong>eight</strong> favourited tweets
-        have been hidden to simplify the chart.</p>
+        <p>Hover over people to see their connections. Hover over connections to
+          see the last tweet liked. Drag people around to rearrange.
+          Connections grow thicker with the number of tweets liked. Pinch or scroll
+          to zoom. People with fewer than <strong>eight</strong> favourited tweets
+          have been hidden to simplify the chart.</p>
 
-      <p>This is a work in progress by <a href="https://twitter.com/citizenai_nz">@citizenai</a>.
-        Interpretations, suggestions, bug reports, etc most welcome. Code
-        available on <a href="https://github.com/Citizen-AI/twitter-network">GitHub</a>.
-        Version 0.4.4. <nobr>License: <a href="https://creativecommons.org/licenses/by/3.0/nz/">CC BY 3.0 NZ</a></nobr></p>
-
+        <p>This is a work in progress by <a href="https://twitter.com/citizenai_nz">@citizenai</a>.
+          Interpretations, suggestions, bug reports, etc most welcome. Code
+          available on <a href="https://github.com/Citizen-AI/twitter-network">GitHub</a>.
+          Version 0.4.5. <nobr>License: <a href="https://creativecommons.org/licenses/by/3.0/nz/">CC BY 3.0 NZ</a></nobr></p>
+      </div>
     </div>
   </body>
   <script>
 
+// TODO: fix arrows
 // TODO: arrows coloured https://stackoverflow.com/a/27803193/1876628
 // TODO: arrows moved to account for their size
 // TODO: wrapped labels https://bl.ocks.org/mbostock/7555321
@@ -66,15 +68,26 @@
 // TODO: animate links by time
 // TODO: better tooltips http://api.jqueryui.com/tooltip/
 // TODO: download low res images
+// TODO: scrolling
 
 
+const stroke_off_opacity = 0.05,
+      min_likes = 5;
 
-const about_box_width = 242;
 var width = window.innerWidth;
 var height = window.innerHeight;
 
-d3.select('.info_button').on('click', () => d3.select('.about').style('display','block'));
-d3.select('.close_button').on('click', () => d3.select('.about').style('display', 'none'));
+resize = () => {
+  width = window.innerWidth;
+  height = window.innerHeight;
+  svg.attr('width', width).attr('height', height);
+  simulation.force('center_force', d3.forceCenter((width + about_box_width()) / 2, height / 2));
+  simulation.alpha(0.3).restart();
+}
+
+window.addEventListener('resize', resize);
+d3.select('.info_button').on('click', () => { d3.select('.about').style('display','block'), resize()});
+d3.select('.close_button').on('click', () => { d3.select('.about').style('display', 'none'), resize()});
 
 d3.select('body')
   .append("svg")
@@ -82,7 +95,7 @@ d3.select('body')
   .attr("height", height);
 
 const svg = d3.select("svg"),
-      size_scale = d3.scalePow().exponent(0.5).domain([0, 100]).range([1,30]),
+      size_scale = d3.scalePow().exponent(0.5).domain([min_likes / 2, 100]).range([1,30]),
       stroke_scale = d3.scaleLinear().domain([1,60]).range([1,15]);
 
 const link_hover = (d, i, nodes) => d3.select(nodes[i]).style('stroke-opacity', 1),
@@ -92,7 +105,8 @@ const link_hover = (d, i, nodes) => d3.select(nodes[i]).style('stroke-opacity', 
       imagefile_from_url = (url) => {
         bits = url.match(/.+\/(.+)_normal(\..+)/);
         return bits ? 'images/' + bits[1] + bits[2] : null;
-      }
+      },
+      about_box_width = () => d3.select('.about').node().getBoundingClientRect().width;
 
 const node_size = d => d.val ? size_scale(d.val) : 5,
       image_size = d => d.val ? size_scale(d.val) * 2 : 10,
@@ -103,13 +117,9 @@ const node_size = d => d.val ? size_scale(d.val) : 5,
       node_title = d => d.name + ': ' + d.description,
       stroke_width = d => stroke_scale(d.times);
 
-const stroke_off_opacity = 0.05;
-var image_loaded = 0;
-
-
 var simulation = d3.forceSimulation()
-  .force('charge_force', d3.forceManyBody().strength(-140))
-  .force('center_force', d3.forceCenter(width / 2, height / 2))
+  .force('charge_force', d3.forceManyBody().strength(-100))
+  .force('center_force', d3.forceCenter((width + about_box_width()) / 2, height / 2))
   .force('collision', d3.forceCollide().radius(node_size));
 
 d3
@@ -118,7 +128,7 @@ d3
     full_graph.nodes = full_graph.nodes.map(n => { n.val = +n.val; return n });
 
     graph = {};
-    graph.nodes = full_graph.nodes.filter(n => n.val === 0 || n.val > 8);  // only influential people
+    graph.nodes = full_graph.nodes.filter(n => n.val === 0 || n.val > min_likes);  // only influential people
     graph.links = full_graph.links.filter(l =>              // only links to now existing nodes
       graph.nodes.filter(n => l.source === n.id).length && graph.nodes.filter(n => l.target === n.id).length
     );
@@ -144,7 +154,6 @@ d3
           		.attr("width", image_size)
               .attr("height", image_size)
               .attr("xlink:href", node_image)
-              .on('load', () => image_loaded++)
 
     var arrows = defs.selectAll("marker") // https://jsfiddle.net/4xt5v51m/3/
             .data(["end"])
@@ -261,14 +270,6 @@ d3
       .scaleExtent([0.1,7]);
 
     zoom_handler(svg);
-
-    window.addEventListener('resize', () => {
-      width = window.innerWidth;
-      height = window.innerHeight;
-      svg.attr('width', width).attr('height', height);
-      simulation.force('center_force', d3.forceCenter(width / 2, height / 2));
-      simulation.alpha(0.3).restart();
-    });
   });
 
   </script>
