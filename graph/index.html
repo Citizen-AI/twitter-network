@@ -14,7 +14,6 @@
     <link rel="stylesheet" type="text/css" href="style.css">
     <script src="library.js"></script>
     <script src="https://d3js.org/d3.v5.min.js"></script>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/spin.js/2.3.2/spin.min.js"></script>
 
     <title>The shape of New Zealand politics</title>
     <meta name="viewport" content="width=device-width, initial-scale=1" />
@@ -26,36 +25,37 @@
     <link rel="icon" type="image/png" href="network-nodes-144-170805.png">
   </head>
   <body>
-    <button class="info_button"><img src="icons8-info-50.png" /></button>
+    <button class="info_button"><img src="icons8-info-50.png" />What&rsquo;s this all about then?</button>
     <div class="about">
       <div class="content">
         <button class="close_button">&times;</button>
         <h1>Whose tweets do <nobr>New Zealand</nobr> MPs like?</h1>
 
-        <p>We were interested to see who our MPs are paying attention to; and
-          whether there is much bipartisanship evident. <strong>What do you see
-            in it?</strong></p>
+        <p>Who are our MPs paying attention to? Who are they influenced by?
+          Which MPs interact <nobr>&lsquo;across the isle&rsquo;?</nobr></p>
 
-        <p>Connections show likes. People's photos grow in proportion to the number
+        <p>Connections show likes. People&rsquo;s photos grow in proportion to the number
           of MPs who've liked their tweets. MPs are coloured by political party where
           that was easy to deduce from their Twitter bios.
 
         <p>Hover over people to see their connections. Hover over connections to
           see the last tweet liked. Drag people around to rearrange.
           Connections grow thicker with the number of tweets liked. Pinch or scroll
-          to zoom. People with fewer than <strong>eight</strong> favourited tweets
+          to zoom. People with fewer than <strong>four</strong> favourited tweets
           have been hidden to simplify the chart.</p>
 
         <p>This is a work in progress by <a href="https://twitter.com/citizenai_nz">@citizenai</a>.
           Interpretations, suggestions, bug reports, etc most welcome. Code
           available on <a href="https://github.com/Citizen-AI/twitter-network">GitHub</a>.
-          Version 0.4.5. <nobr>License: <a href="https://creativecommons.org/licenses/by/3.0/nz/">CC BY 3.0 NZ</a></nobr></p>
+          Version 0.4.6. <nobr>License: <a href="https://creativecommons.org/licenses/by/3.0/nz/">CC BY 3.0 NZ</a></nobr></p>
       </div>
     </div>
   </body>
   <script>
 
 // TODO: fix arrows
+// TODO: *option* to show only non-MP likes
+// TODO: use extent for size
 // TODO: arrows coloured https://stackoverflow.com/a/27803193/1876628
 // TODO: arrows moved to account for their size
 // TODO: wrapped labels https://bl.ocks.org/mbostock/7555321
@@ -68,11 +68,12 @@
 // TODO: animate links by time
 // TODO: better tooltips http://api.jqueryui.com/tooltip/
 // TODO: download low res images
-// TODO: scrolling
 
 
-const stroke_off_opacity = 0.05,
-      min_likes = 5;
+const json_file = 'mps-typed.json',
+      stroke_off_opacity = 0.05,
+      min_likes = 10,
+      likes_since = '1 September 2018';
 
 var width = window.innerWidth;
 var height = window.innerHeight;
@@ -95,7 +96,7 @@ d3.select('body')
   .attr("height", height);
 
 const svg = d3.select("svg"),
-      size_scale = d3.scalePow().exponent(0.5).domain([min_likes / 2, 100]).range([1,30]),
+      size_scale = d3.scalePow().exponent(0.5).domain([0, 50]).range([1,25]),
       stroke_scale = d3.scaleLinear().domain([1,60]).range([1,15]);
 
 const link_hover = (d, i, nodes) => d3.select(nodes[i]).style('stroke-opacity', 1),
@@ -108,40 +109,61 @@ const link_hover = (d, i, nodes) => d3.select(nodes[i]).style('stroke-opacity', 
       },
       about_box_width = () => d3.select('.about').node().getBoundingClientRect().width;
 
-const node_size = d => d.val ? size_scale(d.val) : 5,
-      image_size = d => d.val ? size_scale(d.val) * 2 : 10,
+const node_size = d => d.indegree ? size_scale(d.indegree) : 2,
+      image_size = d => d.indegree ? size_scale(d.indegree) * 2 : 4,
       node_image = d => d.image,
       // node_image = d => imagefile_from_url(d.image),
       node_colour = d => party_colour(d.party),
       node_label = d => d.name,
-      node_title = d => d.name + ': ' + d.description,
+      node_title = d => `${d.name}: ${d.description} (${d.val}, ${d.indegree})`,
       stroke_width = d => stroke_scale(d.times);
 
 var simulation = d3.forceSimulation()
-  .force('charge_force', d3.forceManyBody().strength(-100))
+  .force('charge_force', d3.forceManyBody().strength(-150))
   .force('center_force', d3.forceCenter((width + about_box_width()) / 2, height / 2))
   .force('collision', d3.forceCollide().radius(node_size));
 
+const links_since = (since) => l => {
+    a = new Date(l.created_at);
+    b = new Date(since);
+    return a > b;
+  },
+  only_linked_nodes = n => links.filter(l => (l.target === n.id || l.source === n.id)).length,
+  only_links_with_nodes = l => nodes.filter(n => l.target === n.id).length &&
+                            nodes.filter(n => l.source === n.id).length,
+  calc_degree = n => {
+    n.indegree = links.filter(l => l.target === n.id).length;
+    n.outdegree = links.filter(l => l.source === n.id).length;
+    return n;
+  },
+  only_nodes_of_degree_or_mps = deg => n => n.indegree > deg || n.outdegree > deg || n.type === 'mp'
+  no_links_between_mps = l => nodes.filter(n => l.target === n.id && n.type != 'mp').length
+
 d3
-  .json('mps3.json')
+  .json(json_file)
   .then(full_graph => {
     full_graph.nodes = full_graph.nodes.map(n => { n.val = +n.val; return n });
 
-    graph = {};
-    graph.nodes = full_graph.nodes.filter(n => n.val === 0 || n.val > min_likes);  // only influential people
-    graph.links = full_graph.links.filter(l =>              // only links to now existing nodes
-      graph.nodes.filter(n => l.source === n.id).length && graph.nodes.filter(n => l.target === n.id).length
-    );
+    links = full_graph.links.filter(links_since(likes_since));
+    nodes = full_graph.nodes.filter(only_linked_nodes);
+    nodes = nodes.map(calc_degree);
+    nodes = nodes.filter(only_nodes_of_degree_or_mps(min_likes))
+    links = links.filter(only_links_with_nodes)
+    links = links.filter(no_links_between_mps)
+    nodes = nodes.map(calc_degree);
+    console.log(nodes, links);
+    // return;
+
 
     simulation
-      .nodes(graph.nodes)
-      .force('links', d3.forceLink(graph.links).id(d => d.id))
+      .nodes(nodes)
+      .force('links', d3.forceLink(links).id(d => d.id))
       .on('tick', tick);
 
     var g = svg.append("g").attr("class", "everything"),
         defs = g.append('defs'),
         imgPattern = defs.selectAll("pattern")
-          .data(graph.nodes)
+          .data(nodes)
         	.enter()
             .append("pattern")
               .attr("id", d => d.id)
@@ -172,7 +194,7 @@ d3
     var link = g.append("g")
       .attr("class", "links")
       .selectAll("line")
-      .data(graph.links)
+      .data(links)
       .enter()
         .append("line")
           .style("stroke", link_colour)
@@ -192,7 +214,7 @@ d3
 
     var label = labels_group
         .selectAll("text")
-        .data(graph.nodes)
+        .data(nodes)
           .enter()
             .append("text")
               .text(node_label);
@@ -200,7 +222,7 @@ d3
     var elem = g.append('g')
         .attr('class', 'nodes')
       .selectAll('circle')
-        .data(graph.nodes)
+        .data(nodes)
       .enter()
         .append('g')
 
@@ -239,14 +261,13 @@ d3
 
       var arrowLength = 2;  // https://stackoverflow.com/a/24313834/1876628
       link.each(d => {
-        var nodeRadius = size_scale(d.target.val);
         var x1 = d.source.x,
             y1 = d.source.y,
             x2 = d.target.x,
             y2 = d.target.y,
             angle = Math.atan2(y2 - y1, x2 - x1);
-        d.targetX = x2 - Math.cos(angle) * (nodeRadius + arrowLength);
-        d.targetY = y2 - Math.sin(angle) * (nodeRadius + arrowLength);
+        d.targetX = x2 - Math.cos(angle) * (node_size(d) + arrowLength);
+        d.targetY = y2 - Math.sin(angle) * (node_size(d) + arrowLength);
       });
 
       link
@@ -257,7 +278,7 @@ d3
 
       label
         .attr('x', d => d.x)
-        .attr('y', d => d.y + size_scale(d.val) + 10)
+        .attr('y', d => d.y + node_size(d) + 10)
     }
 
     var zoom_handler = d3
@@ -265,7 +286,7 @@ d3
       .on('zoom', () => {
         g.attr('transform', d3.event.transform);
         label.style('font-size', 8 / d3.event.transform.k + "px");
-        label.attr('y', d => d.y + size_scale(d.val) + (10 / d3.event.transform.k))
+        label.attr('y', d => d.y + node_size(d) + (10 / d3.event.transform.k))
       })
       .scaleExtent([0.1,7]);
 

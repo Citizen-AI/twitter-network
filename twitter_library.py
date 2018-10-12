@@ -98,7 +98,6 @@ def merge_people(csv1, csv2, output_csv):
     df1 = pd.read_csv(OUTPUT_FOLDER + csv1)
     df2 = pd.read_csv(OUTPUT_FOLDER + csv2)
     merged = pd.merge(df1, df2, how='outer')
-    # merged = pd.merge(df1, df2, on=['label','name','description', 'party'], how='outer')
     pd_to_csv(df=merged, filename=output_csv)
 
 
@@ -113,6 +112,7 @@ def csvs_to_force_graph_json(nodes_csv, links_csv, output_json):
         'nodes': nodes,
         'links': links
     }
+    print('Writing', output_json)
     with open(OUTPUT_FOLDER + output_json, 'w') as f:
         json.dump(output, f, indent=4)
 

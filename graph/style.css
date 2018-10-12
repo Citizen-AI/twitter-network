@@ -38,6 +38,7 @@ text {
 }
 
 div.about {
+  display: none;
   position: absolute;
   left: 0px;
   top: 0px;
@@ -76,10 +77,14 @@ div.content {
   top: 0; left: 0;
   padding: 10px;
   background-color: rgba(255, 255, 255, 0.9);
+  font-size: 15px;
+  display: flex;
+  align-items: center;
 }
 .info_button img {
-  width: 30px;
-  height: 30px;
+  width: 25px;
+  height: 25px;
+  margin-right: 8px;
 }
 .close_button {
   position: absolute;
@@ -89,7 +94,6 @@ div.content {
 
 @media only screen and (min-device-width : 320px) and (max-device-width : 480px) {
   div.about {
-    display: none;
     width: 100%;}
 
   /* .info_button,
